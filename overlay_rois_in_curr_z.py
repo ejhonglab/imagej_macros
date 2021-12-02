@@ -38,7 +38,7 @@ def overlay(imp=None, draw_names=False, draw_labels=False, black_behind_text=Fal
         if verbose:
             print 'ROI manager not open. doing nothing.'
 
-        sys.exit()
+        return
 
     rois = manager.getRoisAsArray()
 
