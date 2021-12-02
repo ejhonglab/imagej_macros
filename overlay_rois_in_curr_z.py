@@ -1,6 +1,7 @@
 
 #@ boolean (label="Draw ROI names", value=false) draw_names
 #@ boolean (label="Draw ROI labels", value=false) draw_labels
+#@ boolean (label="Black behind text", value=false) black_behind_text
 
 # Sadly, `from __future__ import print_function` does not work in this context
 
@@ -12,7 +13,7 @@ from ij.plugin.frame import RoiManager
 from ij.gui import RoiListener
 
 
-def overlay(imp=None, draw_names=False, draw_labels=False):
+def overlay(imp=None, draw_names=False, draw_labels=False, black_behind_text=False):
 
     if imp is None:
         imp = IJ.getImage()
@@ -35,6 +36,7 @@ def overlay(imp=None, draw_names=False, draw_labels=False):
 
     overlay.drawNames(draw_names)
     overlay.drawLabels(draw_labels)
+    overlay.drawBackgrounds(black_behind_text)
 
     for roi in rois:
         roi = roi.clone()
@@ -84,5 +86,7 @@ if __name__ == '__main__':
     #overlayer = ZRespectingRoiOverlayer()
     #Roi.addRoiListener(overlayer)
 
-    overlay(draw_names=draw_names, draw_labels=draw_labels)
+    overlay(draw_names=draw_names, draw_labels=draw_labels,
+        black_behind_text=black_behind_text
+    )
 
