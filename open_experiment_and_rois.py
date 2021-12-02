@@ -14,10 +14,12 @@ from ij.plugin import Zoom
 # Will open ROI manager window if not already open.
 manager = RoiManager.getRoiManager()
 
+load_rois = True
+
 rois = manager.getRoisAsArray()
 if len(rois) > 0:
-    print 'ROI manager already has ROIs in it. doing nothing.'
-    sys.exit()
+    print 'ROI manager already has ROIs! assuming compatible. will NOT load RoiSet.zip!'
+    load_rois = False
 
 chooser = DirectoryChooser('Select experiment directory...')
 
@@ -25,6 +27,10 @@ chooser = DirectoryChooser('Select experiment directory...')
 # defined
 
 exp_dir = chooser.getDirectory()
+
+if not exp_dir:
+    print 'no experiment directory selected'
+    sys.exit()
 
 print 'exp_dir:', exp_dir
 
@@ -48,16 +54,16 @@ imp = IJ.getImage()
 
 IJ.run("Set... ", "zoom=400")
 
-roiset_path = join(exp_dir, 'RoiSet.zip')
-print 'roiset_path:', roiset_path
+if load_rois:
+    roiset_path = join(exp_dir, 'RoiSet.zip')
+    print 'roiset_path:', roiset_path
 
-if not exists(roiset_path):
-    print 'ROI zip', roiset_path, 'did not exist. not loading ROIs.'
-    sys.exit()
+    if not exists(roiset_path):
+        print 'ROI zip', roiset_path, 'did not exist. not loading ROIs.'
+        sys.exit()
 
-manager.runCommand('Open', roiset_path)
+    manager.runCommand('Open', roiset_path)
 
-# TODO also call my overlay fn
-
-#IJ.run('overlay rois in curr z', )
-
+IJ.run('overlay rois in curr z',
+    'draw_labels=false draw_names=true black_behind_text=false'
+)

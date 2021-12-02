@@ -13,6 +13,17 @@ from ij.plugin.frame import RoiManager
 from ij.gui import RoiListener
 
 
+# TODO prevent selection / modification of overlay ROIs unless i can figure out how to
+# propagate changes to them through to the ROI manager ROIs they correspond to in a
+# transparent way
+
+# TODO have overlay updated automatically if possible to trigger off of ROI changes
+# (what i was attempting w/ ZRespectingRoiOverlayer below)
+
+# TODO add hotkey to clear overlay? maybe add metadata to ROIs here to clear only the
+# stuff we have drawn? probably not worth the effort and just hotkey to builtin overlay
+# clear
+
 def overlay(imp=None, draw_names=False, draw_labels=False, black_behind_text=False):
 
     if imp is None:
