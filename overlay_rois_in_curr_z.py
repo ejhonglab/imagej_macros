@@ -26,10 +26,26 @@ from ij.gui import RoiListener
 
 def overlay(imp=None, draw_names=False, draw_labels=False, black_behind_text=False):
 
+    verbose = False
+
     if imp is None:
         imp = IJ.getImage()
 
-    verbose = False
+    volumetric = True
+
+    # To allow this to work on a wider variety of TIFFs, not always so carefully
+    # created, where there is just a single non-length-1 dimension (which actually
+    # corresponds to Z, but the TIFF isn't constructed reflecting that).
+    if imp.getNSlices() == 1:
+        volumetric = False
+
+        if imp.getNChannels() == 1 and imp.getNFrames() > 1:
+            print('image is not properly volumetric. assuming T is Z.')
+            set_roi_position_fn = lambda roi: roi.setPosition(roi.getZPosition())
+        else:
+            raise ValueError('image is not volumetric nor only a time dimension to '
+                'assume is Z'
+            )
 
     overlay = Overlay()
 
@@ -52,11 +68,16 @@ def overlay(imp=None, draw_names=False, draw_labels=False, black_behind_text=Fal
     for roi in rois:
         roi = roi.clone()
 
-        c = roi.getCPosition()
-        z = roi.getZPosition()
-        # Don't need t because we are using 0 to have it overlay on all time indices
+        if volumetric:
+            c = roi.getCPosition()
+            z = roi.getZPosition()
 
-        roi.setPosition(c, z, 0)
+            # Don't need t because we are using 0 to have it overlay on all time indices
+            roi.setPosition(c, z, 0)
+
+        else:
+            set_roi_position_fn(roi)
+
         overlay.add(roi)
 
         if verbose:
