@@ -1,0 +1,3 @@
+
+- add a script + hotkey to sort ROIs by (depth, name) (not sure in which sort order)
+
