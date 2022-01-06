@@ -36,39 +36,53 @@ def main():
 
     print 'exp_dir:', exp_dir
 
-    tiff_path = join(exp_dir, 'raw.tif')
-    print 'tiff_path:', tiff_path
-
-    if not exists(tiff_path):
-        print 'tiff', tiff_path, 'did not exist! doing nothing.'
-        return
-
-    opener = Opener()
-    opener.open(tiff_path)
-
-    imp = IJ.getImage()
-
-    # TODO maybe decide whether/how much to zoom based on some properties of this
-    # ImageCanvas object?
-    #canvas = imp.getCanvas()
-    # no error but not intended effect
-    #canvas.setMagnification(4.0)
-
-    IJ.run("Set... ", "zoom=400")
-
     if load_rois:
         roiset_path = join(exp_dir, 'RoiSet.zip')
         print 'roiset_path:', roiset_path
 
         if not exists(roiset_path):
             print 'ROI zip', roiset_path, 'did not exist. not loading ROIs.'
-            return
+        else:
+            manager.runCommand('Open', roiset_path)
 
-        manager.runCommand('Open', roiset_path)
+    tiffs_to_load = ['raw.tif', 'max_trialmean_dff.tif']
 
-    IJ.run('overlay rois in curr z',
-        'draw_labels=false draw_names=true black_behind_text=false'
-    )
+    n_opened = 0
+    for tiff_basename in tiffs_to_load:
+
+        tiff_path = join(exp_dir, tiff_basename)
+        print 'tiff_path:', tiff_path
+
+        if not exists(tiff_path):
+            print 'tiff', tiff_path, 'did not exist!'
+            continue
+
+        opener = Opener()
+        opener.open(tiff_path)
+
+        #imp = IJ.getImage()
+        # TODO maybe decide whether/how much to zoom based on some properties of this
+        # ImageCanvas object?
+        #canvas = imp.getCanvas()
+        # no error but not intended effect
+        #canvas.setMagnification(4.0)
+
+        IJ.run("Set... ", "zoom=400")
+
+        # actually i find i prefer it off mostly in the projection
+        if tiff_basename == 'raw.tif':
+            IJ.run('overlay rois in curr z',
+                'draw_labels=false draw_names=true black_behind_text=false'
+            )
+
+        n_opened += 1
+
+    if n_opened > 1:
+        # NOTE: need to manually select all the windows to sync in list. haven't found a
+        # workaround yet.
+        IJ.run('Synchronize Windows')
+
+    IJ.setTool('polygon')
 
 
 if __name__ == '__main__':
