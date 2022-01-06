@@ -31,6 +31,11 @@ def overlay(imp=None, draw_names=False, draw_labels=False, black_behind_text=Fal
     if imp is None:
         imp = IJ.getImage()
 
+    if verbose:
+        print 'n channels:', imp.getNChannels()
+        print 'n slices:', imp.getNSlices()
+        print 'n frames:', imp.getNFrames()
+
     volumetric = True
 
     # To allow this to work on a wider variety of TIFFs, not always so carefully
@@ -65,16 +70,22 @@ def overlay(imp=None, draw_names=False, draw_labels=False, black_behind_text=Fal
     overlay.drawLabels(draw_labels)
     overlay.drawBackgrounds(black_behind_text)
 
+    n_frames = imp.getNFrames()
+
     for roi in rois:
         roi = roi.clone()
 
         if volumetric:
-            c = roi.getCPosition()
             z = roi.getZPosition()
 
-            # Don't need t because we are using 0 to have it overlay on all time indices
-            roi.setPosition(c, z, 0)
+            if n_frames > 1:
+                c = roi.getCPosition()
 
+                # Don't need t because we are using 0 to have it overlay on all time
+                # indices
+                roi.setPosition(c, z, 0)
+            else:
+                roi.setPosition(z)
         else:
             set_roi_position_fn(roi)
 
