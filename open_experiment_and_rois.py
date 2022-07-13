@@ -45,7 +45,13 @@ def main():
         else:
             manager.runCommand('Open', roiset_path)
 
-    tiffs_to_load = ['raw.tif', 'max_trialmean_dff.tif']
+    # TODO update to ../mocorr_concat.tif once i fix those links to point to path
+    # including ../suite2p link in link target path
+    # TODO maybe still load raw.tif if mocorr.tiff not there?
+    # TODO maybe load all files matching ../*/max_trialmean_dff.tif ?
+    tiffs_to_load = ['mocorr.tif', 'max_trialmean_dff.tif',
+        '../suite2p/mocorr_concat.tif'
+    ]
 
     n_opened = 0
     for tiff_basename in tiffs_to_load:
@@ -76,6 +82,8 @@ def main():
             )
 
         n_opened += 1
+
+    # TODO err if n_opened == 0?
 
     if n_opened > 1:
         # NOTE: need to manually select all the windows to sync in list. haven't found a
