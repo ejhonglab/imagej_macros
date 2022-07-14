@@ -57,7 +57,7 @@ def main():
 
         # TODO update to ../mocorr_concat.tif once i fix those links to point to path
         # including ../suite2p link in link target path
-        '../suite2p/mocorr_concat.tif'
+        '../suite2p/mocorr_concat.tif',
     ]
     tiffs_to_start_with_roi_overlay = [
         'max_trialmean_dff.tif',

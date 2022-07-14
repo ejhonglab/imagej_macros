@@ -46,3 +46,9 @@ macro "Close all traces [f6]" {
 macro "Update matching ROI [r]" {
     run("update matching roi");
 }
+
+// NOTE: [n] replaces the default hotkey that make a new stack (not sure why I'd want to
+// do that though...)
+macro "Number ROIs [n]" {
+    run("number rois");
+}
