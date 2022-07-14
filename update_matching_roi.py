@@ -165,11 +165,28 @@ def main():
     # z slice coordinate
     assert not (n_matching > 1), 'multiple ROIs with same name in >=1 Z index'
 
+    rename_if_unchanged = True
+
     old_roi = manager.getRoi(index)
     assert manager.getRoiIndex(old_roi) == index
     if old_roi.equals(overlay_roi):
-        if verbose:
-            print 'ROI not changed! doing nothing!'
+        if not rename_if_unchanged:
+            if verbose:
+                print 'ROI not changed! doing nothing!'
+        else:
+            # Second argument is default string. The empty string will *also* be
+            # returned if user cancels the dialog.
+            new_name = IJ.getString('New ROI name:', '')
+            if new_name == '':
+                return
+
+            # TODO TODO rename anything sharing same name as well
+            # (consistent w/ how number_rois.py works on numbered ROIs + QoL)
+
+            manager.rename(index, new_name)
+
+            # TODO also update overlay here, if i ever get that figured out
+
         return
 
     # TODO delete
