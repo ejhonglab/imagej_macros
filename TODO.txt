@@ -1,3 +1,10 @@
 
 - add a script + hotkey to sort ROIs by (depth, name) (not sure in which sort order)
 
+- script + hotkey to load / calculate odor <-> frame associations and overlay odor info
+  (via TextROIs added to overlay?) on each frame
+
+- make another hotkey for something that switches between all windows
+  (all synced windows really, but can probably just do all), and does the equivalent of
+  pressing <Esc>, to clear any partially drawn current ROI
+

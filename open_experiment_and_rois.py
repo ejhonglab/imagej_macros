@@ -37,6 +37,9 @@ def main():
     print 'exp_dir:', exp_dir
 
     if load_rois:
+        # TODO manager.reset() if path of new dir doesn't share the path up through the
+        # <date>/<fly> parts (i.e. if it came from a diff fly)?
+
         roiset_path = join(exp_dir, 'RoiSet.zip')
         print 'roiset_path:', roiset_path
 
@@ -45,12 +48,21 @@ def main():
         else:
             manager.runCommand('Open', roiset_path)
 
-    # TODO update to ../mocorr_concat.tif once i fix those links to point to path
-    # including ../suite2p link in link target path
-    # TODO maybe still load raw.tif if mocorr.tiff not there?
-    # TODO maybe load all files matching ../*/max_trialmean_dff.tif ?
-    tiffs_to_load = ['mocorr.tif', 'max_trialmean_dff.tif',
+    tiffs_to_load = [
+        # TODO maybe still load raw.tif if mocorr.tiff not there?
+        'mocorr.tif',
+
+        # TODO maybe load all files matching ../*/max_trialmean_dff.tif ?
+        'max_trialmean_dff.tif',
+
+        # TODO update to ../mocorr_concat.tif once i fix those links to point to path
+        # including ../suite2p link in link target path
         '../suite2p/mocorr_concat.tif'
+    ]
+    tiffs_to_start_with_roi_overlay = [
+        'max_trialmean_dff.tif',
+        # TODO probably remove this one
+        'mocorr.tif',
     ]
 
     n_opened = 0
@@ -75,8 +87,7 @@ def main():
 
         IJ.run("Set... ", "zoom=400")
 
-        # actually i find i prefer it off mostly in the projection
-        if tiff_basename == 'raw.tif':
+        if tiff_basename in tiffs_to_start_with_roi_overlay:
             IJ.run('overlay rois in curr z',
                 'draw_labels=false draw_names=true black_behind_text=false'
             )
@@ -87,8 +98,11 @@ def main():
 
     if n_opened > 1:
         # NOTE: need to manually select all the windows to sync in list. haven't found a
-        # workaround yet.
+        # workaround yet. also need to manually deselect the sync T frames option
         IJ.run('Synchronize Windows')
+
+    # TODO can i call some external tool to arrange the windows? or is there an ImageJ
+    # API way to do that?
 
     IJ.setTool('polygon')
 

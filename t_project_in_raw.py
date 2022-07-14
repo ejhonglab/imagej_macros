@@ -6,6 +6,8 @@ from ij.gui import Overlay, Roi
 
 
 def main():
+    # TODO why didn't i do IJ.getImage() for this? any diff? docs seem to indicate they
+    # are pretty much the same
     curr_image = WindowManager.getCurrentImage()
 
     window_title = 'raw.tif'

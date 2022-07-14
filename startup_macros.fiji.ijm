@@ -5,6 +5,15 @@
 // Note that you may need to change the hotkeys for some of these if other plugins /
 // modifications to your ImageJ use some of these keys.
 
+// To avoid accidentally closing images this way
+macro "Do nothing [w]" {
+}
+
+// Since I accidentally press [s] a lot, and never do it intentionally to actually save
+// images.
+macro "Do nothing [s]" {
+}
+
 macro "Plot ROI time profile  [f1]" {
 	run("Plot Z-axis Profile", "Profile=time");
 
@@ -33,6 +42,7 @@ macro "Close all traces [f6]" {
 	close("*.tif-*-*");
 }
 
-// To avoid accidentally closing images this way
-macro "Do nothing [w]" {
+// NOTE: [r] replaces the default hotkey that reverts image to unmodified state
+macro "Update matching ROI [r]" {
+    run("update matching roi");
 }
