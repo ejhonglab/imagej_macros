@@ -42,6 +42,10 @@ macro "Close all traces [f6]" {
 	close("*.tif-*-*");
 }
 
+macro "Overlay odors [f8]" {
+    run("overlay odors");
+}
+
 // NOTE: [r] replaces the default hotkey that reverts image to unmodified state
 macro "Update matching ROI [r]" {
     run("update matching roi");
