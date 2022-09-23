@@ -12,17 +12,71 @@ from ij.gui import Overlay, Roi
 from ij.plugin.frame import RoiManager
 from ij.gui import RoiListener
 
+from java.awt.event import KeyAdapter
 
-# TODO prevent selection / modification of overlay ROIs unless i can figure out how to
-# propagate changes to them through to the ROI manager ROIs they correspond to in a
-# transparent way
 
 # TODO have overlay updated automatically if possible to trigger off of ROI changes
-# (what i was attempting w/ ZRespectingRoiOverlayer below)
+# (what i was attempting w/ ZRespectingRoiOverlayer below, and what i'm currently trying
+# to do w/ OverlayUpdaterKeyListener)
 
-# TODO add hotkey to clear overlay? maybe add metadata to ROIs here to clear only the
-# stuff we have drawn? probably not worth the effort and just hotkey to builtin overlay
-# clear
+class OverlayUpdaterKeyListener(KeyAdapter):
+    #image_id2overlay_settings = dict()
+    draw_names = False
+    draw_labels = False
+    black_behind_text = False
+
+    def keyPressed(self, event):
+        imp = event.getSource().getImage()
+        print str(self), 'id(self):', id(self)
+
+        print 'draw_names:', self.draw_names, 'draw_labels:', self.draw_labels, \
+            'black_behind_text:', self.black_behind_text
+
+        print 'imp:', str(imp), 'image_id:', imp.getID()
+        print 'key:', str(event.getKeyCode())
+        print ''
+
+        # TODO intercept at least t/r[/delete if i implement using that to delete ROIs]
+        # TODO try to pass thru everything else somehow
+
+
+def add_listener(imp, draw_names, draw_labels, black_behind_text):
+    win = imp.getWindow()
+    if win is None:
+        # TODO might rather err here
+        return
+
+    canvas = win.getCanvas()
+    kls = canvas.getKeyListeners()
+
+    existing_listener = None
+    print 'listeners:'
+    for listener in kls:
+        print listener
+        # type / isintance checks were not working
+        if 'OverlayUpdaterKeyListener' in str(type(listener)):
+            print 'found existing listener!'
+            existing_listener = listener
+    print ''
+
+    if existing_listener is not None:
+        print 'using existing listener!'
+        listener = existing_listener
+    else:
+        # TODO maybe pass image / image ID thru a custom __init__
+        listener = OverlayUpdaterKeyListener()
+
+    listener.draw_names = draw_names
+    listener.draw_labels = draw_labels
+    listener.black_behind_text = black_behind_text
+
+    # TODO TODO do i have to do this? if so, maybe wrap existing listeners and pass
+    # thru everything but the few keys i want to use (t, r)?
+    #map(canvas.removeKeyListener, kls)
+
+    if existing_listener is None:
+        canvas.addKeyListener(listener)
+
 
 def overlay(imp=None, draw_names=False, draw_labels=False, black_behind_text=False):
 
@@ -30,6 +84,15 @@ def overlay(imp=None, draw_names=False, draw_labels=False, black_behind_text=Fal
 
     if imp is None:
         imp = IJ.getImage()
+
+    add_listener(imp, draw_names, draw_labels, black_behind_text)
+
+    # didn't work. global dict seems to get cleaned up between runs.
+    #image_id = imp.getID()
+    #image_id2overlay_settings[image_id] = {
+    #    'draw_names': draw_names,
+    #    'draw_labels': draw_labels,
+    #}
 
     if verbose:
         print 'n channels:', imp.getNChannels()
@@ -120,7 +183,7 @@ class ZRespectingRoiOverlayer(RoiListener):
 
 
 if __name__ == '__main__':
-    #print 'listener containing only:', [y for x in dir(Roi) if 'listener' in x.lower()]
+    #print 'listener containing only:', [x for x in dir(Roi) if 'listener' in x.lower()]
     # not sure why this isn't defined even though it's in the API docs...
     #print 'roi listeners:'
     #for listener in Roi.getListeners():
