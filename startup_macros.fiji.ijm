@@ -46,9 +46,10 @@ macro "Overlay odors [f8]" {
     run("overlay odors");
 }
 
-// NOTE: [r] replaces the default hotkey that reverts image to unmodified state
+// This macro is so that the default 'r' behavior (reverting image to unmodified state)
+// doesn't also run when my keylistener in overlay_rois_in_curr_z.py triggers some
+// behavior on '[r]'
 macro "Update matching ROI [r]" {
-    run("update matching roi");
 }
 
 // NOTE: [n] replaces the default hotkey that make a new stack (not sure why I'd want to
