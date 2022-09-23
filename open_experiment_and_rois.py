@@ -101,6 +101,9 @@ def main():
         # workaround yet. also need to manually deselect the sync T frames option
         IJ.run('Synchronize Windows')
 
+    # TODO do Window->Tile? especially if i can't figure out how to automatically
+    # arrange things more as i would like
+
     # TODO can i call some external tool to arrange the windows? or is there an ImageJ
     # API way to do that?
 

@@ -7,6 +7,11 @@ from ij.plugin.frame import RoiManager
 # TODO also try to just have this work automatically via RoiListener / similar?
 # why wasn't that working in overlay_rois_in_curr_z.py again?
 
+# TODO TODO make also work if ROI selected in ROI manager list
+# TODO TODO also make sure it works if ROI has just been drawn and added, but overlay
+# not updated (also try to get it to work to also add the ROI, if it hasn't even been
+# added to the ROI manager)
+
 verbose = False
 
 def print_roi(roi):
