@@ -10,6 +10,11 @@ macro "Do nothing [w]" {
 macro "Do nothing [s]" {
 }
 
+// Since I want to use this for overlay listener [p] -> plot_roi_responses binding.
+// Replaces some kind of printing function I don't use.
+macro "Do nothing [p]" {
+}
+
 macro "Plot ROI time profile  [f1]" {
 	run("Plot Z-axis Profile", "Profile=time");
 

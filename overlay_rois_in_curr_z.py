@@ -7,8 +7,10 @@
 
 # Will remove any existing overlay
 
+from os.path import expanduser
 import time
 
+from java.lang import Runtime
 from ij import IJ
 from ij.gui import Overlay, Roi
 from ij.plugin.frame import RoiManager
@@ -109,17 +111,26 @@ def rois_equal(roi1, roi2):
     return True
 
 
-# TODO TODO make also work if ROI selected in ROI manager list
-# TODO TODO also make sure it works if ROI has just been drawn and added, but overlay
-# not updated (also try to get it to work to also add the ROI, if it hasn't even been
-# added to the ROI manager)
-def update_matching_roi():
-    manager = RoiManager.getInstance()
-    if not manager:
-        if verbose:
-            print 'ROI manager not open. doing nothing.'
-        return
+def check_roi_state(roi, expected_state='NORMAL'):
+    state_int = roi.getState()
+    states = [
+        # From ImageJ source code.
+        'CONSTRUCTING',
+        'MOVING',
+        'RESIZING',
+        'NORMAL',
+        'MOVING_HANDLE',
+    ]
+    state = None
+    for state_name in states:
+        if state_int == getattr(Roi, state_name):
+            state = state_name
+    assert state is not None
+    assert state == expected_state
 
+
+def get_overlay_roi(check_state=True):
+    # TODO might want to check if this is None...
     imp = IJ.getImage()
     overlay_roi = imp.roi
 
@@ -141,26 +152,45 @@ def update_matching_roi():
         print_roi(overlay_roi)
     #
 
-    state_int = overlay_roi.getState()
+    if check_state:
+        # TODO may need to fail / warn / popup / finalize (via abortModification?)
+        # if state isn't NORMAL (seems ok to just not support this for now actually.
+        # state was NORMAL in testing as I'd actually use this.)
+        check_roi_state(overlay_roi)
 
-    states = [
-        # From ImageJ source code.
-        'CONSTRUCTING',
-        'MOVING',
-        'RESIZING',
-        'NORMAL',
-        'MOVING_HANDLE',
-    ]
-    state = None
-    for state_name in states:
-        if state_int == getattr(Roi, state_name):
-            state = state_name
-    assert state is not None
+    return overlay_roi
 
-    # TODO may need to fail / warn / popup / finalize (via abortModification?)
-    # if state isn't NORMAL (seems ok to just not support this for now actually.
-    # state was NORMAL in testing as I'd actually use this.)
-    assert state == 'NORMAL', 'state of overlay ROI indicated it was being modified'
+
+def find_roi_manager_index(target_roi, manager=None)
+    if manager is None:
+        manager = RoiManager.getInstance()
+        if not manager:
+            if verbose:
+                print 'ROI manager not open. doing nothing.'
+            return
+
+    rois = manager.getRoisAsArray()
+    index = None
+    n_matching = 0
+    for i, roi in enumerate(rois):
+        if rois_equal(target_roi, roi):
+            index = i
+            n_matching += 1
+
+    assert index is not None, 'no matching ROI found!'
+    # TODO TODO test meaningful error message if there are two w/ same name in same
+    # z slice coordinate
+    assert not (n_matching > 1), 'multiple ROIs with same name in >=1 Z index'
+
+    return manager, index
+
+
+# TODO TODO make also work if ROI selected in ROI manager list
+# TODO TODO also make sure it works if ROI has just been drawn and added, but overlay
+# not updated (also try to get it to work to also add the ROI, if it hasn't even been
+# added to the ROI manager)
+def update_matching_roi():
+    overlay_roi = get_overlay_roi()
 
     # TODO TODO maybe my overlay creation should be making some maybe i should cache a
     # list of ROIs in overlay creation (maybe via a listener for [each?] overlay roi?)
@@ -171,23 +201,13 @@ def update_matching_roi():
     # NOTE: Roi.[get/set]PreviousRoi are not what I want, as there is only one global
     # Roi stored there.
 
-    rois = manager.getRoisAsArray()
-    index = None
-    n_matching = 0
-    for i, roi in enumerate(rois):
-        if rois_equal(overlay_roi, roi):
-            index = i
-            n_matching += 1
-
-    assert index is not None, 'no matching ROI found!'
-    # TODO TODO test meaningful error message if there are two w/ same name in same
-    # z slice coordinate
-    assert not (n_matching > 1), 'multiple ROIs with same name in >=1 Z index'
+    manager, index = find_roi_manager_index(manager)
 
     rename_if_unchanged = True
 
     old_roi = manager.getRoi(index)
     assert manager.getRoiIndex(old_roi) == index
+    # TODO some reason i'm not using rois_equal here? i think it's intentional...
     if old_roi.equals(overlay_roi):
         if not rename_if_unchanged:
             if verbose:
@@ -208,36 +228,44 @@ def update_matching_roi():
 
         return
 
-    # TODO delete
-    if verbose:
-        print('matching ROI:')
-        print_roi(old_roi)
-    #
-
     manager.setRoi(overlay_roi, index)
 
-    '''
-    # TODO might need manager.deselect() first if selection method i use doesn't clear
-    # existing selection first
-
-    manager.select(index)
-
-    # TODO delete
-    assert manager.isSelected(index)
-    selected_roi_indices = manager.getSelectedIndexes()
-    assert len(selected_roi_indices) == 1
-    assert selected_roi_indices[0] == index
-    #
-
-    manager.runCommand("Update")
-    '''
-
     # TODO make sure (C, Z, T) are all preserved in update process
-    # (or at least Z... see related note in rois_equal)
+    # (or at least Z... see related note in rois_equal) (still relevant?)
     new_roi = manager.getRoi(index)
     assert rois_equal(new_roi, overlay_roi)
     assert new_roi.equals(overlay_roi)
     assert rois_equal(old_roi, new_roi)
+
+
+# TODO move this to its own script, if i figure out how to factor the stuff this shares
+# w/ update_matching_roi out into a package or something
+# (though if IJ.run just won't ever work inside the listener, not sure i can factor it
+# out anyway... not sure why it froze when i was trying to call update_matching_roi that
+# way)
+def plot_roi_responses():
+    overlay_roi = get_overlay_roi()
+    manager, index = find_roi_manager_index(overlay_roi)
+    manager.deselect()
+
+    # TODO may need to handle case where there is only one ROI, cause not sure i want to
+    # support loading .roi files (instead of the RoiSet.zip files)
+    # TODO proper java way to get temp file paths?
+    # TODO or maybe save as a hidden file in the image directory?
+    tmp_roiset_zip_path = '/tmp/imagej_macros.plot_roi_responses.RoiSet.zip'
+    success = manager.save(tmp_roiset_zip_path)
+    assert success, 'saving ROIs to %s failed!' % tmp_roiset_zip_path
+
+    plot_script_path = expanduser('~/src/al_analysis/plot_roi.py')
+
+    imp = IJ.getImage()
+    file_info = imp.getOriginalFileInfo()
+    analysis_dir = file_info.directory
+
+    cmd = 'conda run -n suite2p %s -a %s -i %s' % (plot_script_path, analysis_dir, index)
+
+    rt = Runtime.getRuntime()
+    proc = rt.exec(cmd)
 
 
 class OverlayUpdaterKeyListener(KeyAdapter):
@@ -271,6 +299,10 @@ class OverlayUpdaterKeyListener(KeyAdapter):
 
         elif key_code == KeyEvent.VK_DELETE:
             pass
+
+        elif key_code == KeyEvent.VK_P:
+            plot_roi_responses()
+            return
 
         else:
             return
