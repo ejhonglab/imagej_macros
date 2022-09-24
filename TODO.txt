@@ -1,10 +1,6 @@
 
 - add a script + hotkey to sort ROIs by (depth, name) (not sure in which sort order)
 
-- make another hotkey for something that switches between all windows
-  (all synced windows really, but can probably just do all), and does the equivalent of
-  pressing <Esc>, to clear any partially drawn current ROI
-
 - custom hotkey + plugin to allow <Delete> to work w/ ROIs in overlay, similar to
   updating/renaming stuff i have on [r]
 
@@ -13,3 +9,4 @@
 - (especially if possible to call external programs, i.e. some of my python scripts)
   hotkey to plot full tuning curve for an ROI (in terms of a per-trial mean, with odors
   labelled). see al_analysis/plot_roi.py
+

@@ -1,7 +1,3 @@
-
-// Manually copy the contents of this file to the end of:
-// <fiji directory>/macros/StartupMacros.fiji.ijm
-
 // Note that you may need to change the hotkeys for some of these if other plugins /
 // modifications to your ImageJ use some of these keys.
 

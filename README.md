@@ -28,16 +28,15 @@ the Fiji `plugins` folder. Restart Fiji.
 
 
 #### Windows
+Copy:
+- all of the `*.py` files from this repo to `Fiji.app/plugins`
+- `install_macros.ijm` to `Fiji.app/macros/AutoRun`
+- `startup_macros.ijm` to `Fiji.app/macros/toolsets/hong.ijm` (renaming to `hong.ijm`)
 
-Manually copy all of the `*.py` files from this repo to the `Fiji.app/plugins` folder of
-your Fiji installation. Restart Fiji.
+Restart Fiji.
 
 
-#### Setting up hotkeys
-
-Manually copy the contents of `imagej_macros/startup_macros.fiji.ijm` to the end of the
-`Fiji.app/macros/StartupMacros.fiji.ijm`. Mind potential conflicts between these
-shorcuts and other plugins / modifications you have, changing if needed. Restart Fiji.
+#### Hotkeys
 
 Current hotkeys:
 - `[f1]`: plot time profile of selected ROI
@@ -49,6 +48,18 @@ Current hotkeys:
 
 - `[f4]`: same as above, but without drawing ROI labels
 
+- `[f5]`: clear overlay
+
+- `[f6]`: close all time profile plots open
+
+- `[f8]`: overlay odor information found in `trial_frames_and_odors.json` in the image
+   directory
+
+- `r`: update selected overlay ROI in ROI Manager / rename if points not changed
+
+See `startup_macros.fiji.ijm` for a mostly complete list of my current hotkeys.
+
 The corresponding scripts installed above should also be available towards the bottom of
-the `Plugins` menu (not under a sub-menu).
+the `Plugins` menu (not under a sub-menu), though I generally run them through the
+installed hotkeys.
 
