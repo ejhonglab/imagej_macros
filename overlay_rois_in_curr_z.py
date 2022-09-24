@@ -259,7 +259,7 @@ class OverlayUpdaterKeyListener(KeyAdapter):
             # get processed before we try to update the overlay below... May need to
             # manually handle the add in here and deal with that hotkey if it keeps
             # happening.
-            pass
+            time.sleep(0.2)
 
         # TODO why does this one not seem to work, but t does?
         # (as in the original hotkey not getting triggered separately)
