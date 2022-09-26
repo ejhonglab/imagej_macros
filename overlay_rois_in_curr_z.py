@@ -10,13 +10,13 @@
 from os.path import expanduser
 import time
 
-from java.lang import Runtime
+from java.lang import ProcessBuilder
+from java.lang.ProcessBuilder import Redirect
+from java.awt.event import KeyAdapter, KeyEvent
 from ij import IJ
 from ij.gui import Overlay, Roi
 from ij.plugin.frame import RoiManager
 from ij.gui import RoiListener
-
-from java.awt.event import KeyAdapter, KeyEvent
 
 
 # TODO have overlay updated automatically if possible to trigger off of ROI changes
@@ -161,7 +161,7 @@ def get_overlay_roi(check_state=True):
     return overlay_roi
 
 
-def find_roi_manager_index(target_roi, manager=None)
+def find_roi_manager_index(target_roi, manager=None):
     if manager is None:
         manager = RoiManager.getInstance()
         if not manager:
@@ -256,16 +256,32 @@ def plot_roi_responses():
     success = manager.save(tmp_roiset_zip_path)
     assert success, 'saving ROIs to %s failed!' % tmp_roiset_zip_path
 
+    conda_path = expanduser('~/anaconda3/condabin/conda')
+
     plot_script_path = expanduser('~/src/al_analysis/plot_roi.py')
 
     imp = IJ.getImage()
     file_info = imp.getOriginalFileInfo()
     analysis_dir = file_info.directory
 
-    cmd = 'conda run -n suite2p %s -a %s -i %s' % (plot_script_path, analysis_dir, index)
+    cmd = '%s run -n suite2p %s -a %s -i %s -r %s' % (
+        conda_path, plot_script_path, analysis_dir, index, tmp_roiset_zip_path
+    )
+    print 'running:', cmd
 
-    rt = Runtime.getRuntime()
-    proc = rt.exec(cmd)
+    # TODO why is this not working? (for current value of cmd, <str>.split works fine)
+    #cmd_list = shlex.split(cmd)
+    cmd_list = cmd.split()
+
+    # TODO tried: https://stackoverflow.com/questions/3936023 to redirect stdout/err to
+    # imagej console, but while i can see the python traceback if ij is started from
+    # terminal (in terminal is the only place i can see it), i can't see it in console.
+    # TODO do i need to get something from proc? just not possible (this way?) for some
+    # reason?
+    pb = ProcessBuilder(cmd_list)
+    pb.redirectOutput(Redirect.INHERIT)
+    pb.redirectError(Redirect.INHERIT)
+    proc = pb.start()
 
 
 class OverlayUpdaterKeyListener(KeyAdapter):
