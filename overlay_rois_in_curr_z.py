@@ -7,11 +7,12 @@
 
 # Will remove any existing overlay
 
-from os.path import expanduser
+from os.path import expanduser, split
 import time
 
 from java.lang import ProcessBuilder
 from java.lang.ProcessBuilder import Redirect
+from java.io import File
 from java.awt.event import KeyAdapter, KeyEvent
 from ij import IJ
 from ij.gui import Overlay, Roi
@@ -191,6 +192,8 @@ def find_roi_manager_index(target_roi, manager=None):
 # added to the ROI manager)
 def update_matching_roi():
     overlay_roi = get_overlay_roi()
+    if overlay_roi is None:
+        return
 
     # TODO TODO maybe my overlay creation should be making some maybe i should cache a
     # list of ROIs in overlay creation (maybe via a listener for [each?] overlay roi?)
@@ -201,7 +204,7 @@ def update_matching_roi():
     # NOTE: Roi.[get/set]PreviousRoi are not what I want, as there is only one global
     # Roi stored there.
 
-    manager, index = find_roi_manager_index(manager)
+    manager, index = find_roi_manager_index(overlay_roi)
 
     rename_if_unchanged = True
 
@@ -244,7 +247,14 @@ def update_matching_roi():
 # out anyway... not sure why it froze when i was trying to call update_matching_roi that
 # way)
 def plot_roi_responses():
+    # TODO handle case where ROI has not been added yet (probably via either saving w/o
+    # adding to list, if possible, or otherwise adding/saving/removing?)
     overlay_roi = get_overlay_roi()
+    if overlay_roi is None:
+        return
+
+    # TODO change to work w/ multiple ROIs selected? ig it would need to be from the
+    # list though (is it possible to select multiple overlay ROIs?)?
     manager, index = find_roi_manager_index(overlay_roi)
     manager.deselect()
 
@@ -267,7 +277,8 @@ def plot_roi_responses():
     cmd = '%s run -n suite2p %s -a %s -i %s -r %s' % (
         conda_path, plot_script_path, analysis_dir, index, tmp_roiset_zip_path
     )
-    print 'running:', cmd
+    if verbose:
+        print 'running:', cmd
 
     # TODO why is this not working? (for current value of cmd, <str>.split works fine)
     #cmd_list = shlex.split(cmd)
@@ -279,8 +290,14 @@ def plot_roi_responses():
     # TODO do i need to get something from proc? just not possible (this way?) for some
     # reason?
     pb = ProcessBuilder(cmd_list)
+
+    plot_script_dir = File(split(plot_script_path)[0])
+    pb.directory(plot_script_dir)
+
+    # TODO or maybe i actually want to capture the output, and print it?
     pb.redirectOutput(Redirect.INHERIT)
     pb.redirectError(Redirect.INHERIT)
+
     proc = pb.start()
 
 
