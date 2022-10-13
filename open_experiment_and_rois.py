@@ -55,9 +55,10 @@ def main():
         # TODO maybe load all files matching ../*/max_trialmean_dff.tif ?
         'max_trialmean_dff.tif',
 
-        # TODO update to ../mocorr_concat.tif once i fix those links to point to path
-        # including ../suite2p link in link target path
-        '../suite2p/mocorr_concat.tif',
+        # This should be a symlink to one ../suite2p/mocorr_concat.tif, which should
+        # itself be a directory symlink to one of the suite2p run directories under
+        # ../suite2p_runs (e.g. ../suite2p_runs/<run number>/suite2p)
+        '../mocorr_concat.tif',
     ]
     tiffs_to_start_with_roi_overlay = [
         'max_trialmean_dff.tif',

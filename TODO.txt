@@ -4,9 +4,7 @@
 - custom hotkey + plugin to allow <Delete> to work w/ ROIs in overlay, similar to
   updating/renaming stuff i have on [r]
 
-- something like F1, but just for plotting trace w/in current odor period
-
-- (especially if possible to call external programs, i.e. some of my python scripts)
-  hotkey to plot full tuning curve for an ROI (in terms of a per-trial mean, with odors
-  labelled). see al_analysis/plot_roi.py
+- get .desktop file I'm actually using for ImageJ loading the environment variables i
+  have in ~/.bashrc + ~/.variables correctly (or just wrap my call to my program in
+  [login?] bash invocation?)
 

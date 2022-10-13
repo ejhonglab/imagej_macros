@@ -246,7 +246,9 @@ def update_matching_roi():
 # (though if IJ.run just won't ever work inside the listener, not sure i can factor it
 # out anyway... not sure why it froze when i was trying to call update_matching_roi that
 # way)
-def plot_roi_responses():
+# TODO TODO TODO modifier to get prompted for additional matching str arguments
+# (for comparing ROI to one of several possibilities)
+def plot_roi_responses(compare_to_cached=False):
     # TODO handle case where ROI has not been added yet (probably via either saving w/o
     # adding to list, if possible, or otherwise adding/saving/removing?)
     overlay_roi = get_overlay_roi()
@@ -267,15 +269,20 @@ def plot_roi_responses():
     assert success, 'saving ROIs to %s failed!' % tmp_roiset_zip_path
 
     conda_path = expanduser('~/anaconda3/condabin/conda')
-
+    env_name = 'suite2p'
     plot_script_path = expanduser('~/src/al_analysis/plot_roi.py')
 
     imp = IJ.getImage()
     file_info = imp.getOriginalFileInfo()
     analysis_dir = file_info.directory
 
-    cmd = '%s run -n suite2p %s -a %s -i %s -r %s' % (
-        conda_path, plot_script_path, analysis_dir, index, tmp_roiset_zip_path
+    # TODO TODO TODO call w/ -c/--no-compare unless shift is held down, or something
+    # like that (try to detect in keylistener + pass as kwarg to this fn)
+    # (or the opposite?)
+
+    # TODO replace w/ named format string elements + RHS dict (work?)
+    cmd = '%s run -n %s --no-capture-output %s -a %s -i %s -r %s' % (
+        conda_path, env_name, plot_script_path, analysis_dir, index, tmp_roiset_zip_path
     )
     if verbose:
         print 'running:', cmd
@@ -301,6 +308,11 @@ def plot_roi_responses():
     proc = pb.start()
 
 
+# TODO TODO TODO either here or via startup macros, override / add-to default 't'
+# actions to also prompt for a name for the roi (at least shift+t or something)?
+# TODO TODO TODO try to get to update in all windows with overlays when any window with
+# an overlay has an ROI change
+# TODO TODO TODO make n -> renumber_rois also update any active overlays
 class OverlayUpdaterKeyListener(KeyAdapter):
     draw_names = False
     draw_labels = False
