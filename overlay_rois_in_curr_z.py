@@ -248,7 +248,7 @@ def update_matching_roi():
 # way)
 # TODO TODO TODO modifier to get prompted for additional matching str arguments
 # (for comparing ROI to one of several possibilities)
-def plot_roi_responses(compare_to_cached=False):
+def plot_roi_responses(add_to_existing_plot=False, compare_to_cached=False):
     # TODO handle case where ROI has not been added yet (probably via either saving w/o
     # adding to list, if possible, or otherwise adding/saving/removing?)
     overlay_roi = get_overlay_roi()
@@ -276,14 +276,13 @@ def plot_roi_responses(compare_to_cached=False):
     file_info = imp.getOriginalFileInfo()
     analysis_dir = file_info.directory
 
-    # TODO TODO TODO call w/ -c/--no-compare unless shift is held down, or something
-    # like that (try to detect in keylistener + pass as kwarg to this fn)
-    # (or the opposite?)
-
     # TODO replace w/ named format string elements + RHS dict (work?)
-    cmd = '%s run -n %s --no-capture-output %s -a %s -i %s -r %s' % (
-        conda_path, env_name, plot_script_path, analysis_dir, index, tmp_roiset_zip_path
+    cmd = '%s run -n %s --no-capture-output %s -d %s -r %s -i %s' % (
+        conda_path, env_name, plot_script_path, analysis_dir, tmp_roiset_zip_path, index
     )
+    if add_to_existing_plot:
+        cmd = cmd + ' -a'
+
     if verbose:
         print 'running:', cmd
 
@@ -311,7 +310,8 @@ def plot_roi_responses(compare_to_cached=False):
 # TODO TODO TODO either here or via startup macros, override / add-to default 't'
 # actions to also prompt for a name for the roi (at least shift+t or something)?
 # TODO TODO TODO try to get to update in all windows with overlays when any window with
-# an overlay has an ROI change
+# an overlay has an ROI change (change so i only have one listener and register it w/
+# all the windows?)
 # TODO TODO TODO make n -> renumber_rois also update any active overlays
 class OverlayUpdaterKeyListener(KeyAdapter):
     draw_names = False
@@ -346,7 +346,9 @@ class OverlayUpdaterKeyListener(KeyAdapter):
             pass
 
         elif key_code == KeyEvent.VK_P:
-            plot_roi_responses()
+            # Ctrl/Shift + p already have builtin ImageJ meanings
+            # (I could probably override them to do nothing, but still...)
+            plot_roi_responses(add_to_existing_plot=event.isAltDown())
             return
 
         else:
