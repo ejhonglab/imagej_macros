@@ -9,6 +9,7 @@
 
 from os.path import expanduser, split
 import time
+import shlex
 
 from java.lang import ProcessBuilder
 from java.lang.ProcessBuilder import Redirect
@@ -246,14 +247,15 @@ def update_matching_roi():
 # (though if IJ.run just won't ever work inside the listener, not sure i can factor it
 # out anyway... not sure why it froze when i was trying to call update_matching_roi that
 # way)
-# TODO TODO TODO modifier to get prompted for additional matching str arguments
-# (for comparing ROI to one of several possibilities)
-def plot_roi_responses(add_to_existing_plot=False, compare_to_cached=False):
-    # TODO handle case where ROI has not been added yet (probably via either saving w/o
-    # adding to list, if possible, or otherwise adding/saving/removing?)
+def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False,
+    compare_to_cached=False):
+
     overlay_roi = get_overlay_roi()
     if overlay_roi is None:
         return
+
+    # TODO TODO handle case where ROI has not been added yet (probably via either saving
+    # w/o adding to list, if possible, or otherwise adding/saving/removing?)
 
     # TODO change to work w/ multiple ROIs selected? ig it would need to be from the
     # list though (is it possible to select multiple overlay ROIs?)?
@@ -280,15 +282,21 @@ def plot_roi_responses(add_to_existing_plot=False, compare_to_cached=False):
     cmd = '%s run -n %s --no-capture-output %s -d %s -r %s -i %s' % (
         conda_path, env_name, plot_script_path, analysis_dir, tmp_roiset_zip_path, index
     )
+
     if add_to_existing_plot:
         cmd = cmd + ' -a'
+
+    # TODO technically could probably avoid sourcing + even activating conda environment
+    # as long as we already have one plotting server process running (cause the
+    # non-stdlib imports don't happen in the client path in al_analysis/plot_roi.py)
+
+    if source_bashrc:
+        cmd = 'bash -ic "source ~/.bashrc && %s"' % cmd
 
     if verbose:
         print 'running:', cmd
 
-    # TODO why is this not working? (for current value of cmd, <str>.split works fine)
-    #cmd_list = shlex.split(cmd)
-    cmd_list = cmd.split()
+    cmd_list = shlex.split(cmd)
 
     # TODO tried: https://stackoverflow.com/questions/3936023 to redirect stdout/err to
     # imagej console, but while i can see the python traceback if ij is started from
