@@ -52,18 +52,23 @@ def main():
         # TODO maybe still load raw.tif if mocorr.tiff not there?
         'mocorr.tif',
 
+        'trial_dff.tif',
+        'trialmean_dff.tif',
         # TODO maybe load all files matching ../*/max_trialmean_dff.tif ?
-        'max_trialmean_dff.tif',
+        #'max_trialmean_dff.tif',
 
         # This should be a symlink to one ../suite2p/mocorr_concat.tif, which should
         # itself be a directory symlink to one of the suite2p run directories under
         # ../suite2p_runs (e.g. ../suite2p_runs/<run number>/suite2p)
         '../mocorr_concat.tif',
     ]
+
     tiffs_to_start_with_roi_overlay = [
-        'max_trialmean_dff.tif',
-        # TODO probably remove this one
         'mocorr.tif',
+
+        'trial_dff.tif',
+        'trialmean_dff.tif',
+        #'max_trialmean_dff.tif',
     ]
 
     n_opened = 0

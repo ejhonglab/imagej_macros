@@ -42,9 +42,6 @@ def overlay(imp=None):
     with open(json_fname, 'r') as f:
         trial_data_list = json.load(f)
 
-    # TODO TODO err if n_frames doesn't match up w/ # timepoints in movie
-    # TODO err if any frames are overlapping (/ missing)
-
     if verbose:
         from pprint import pprint
         pprint(trial_data_list)
@@ -62,13 +59,42 @@ def overlay(imp=None):
 
     overlay = Overlay()
 
-    for trial_data in trial_data_list:
-        start_frame = trial_data['start_frame'] + 1
-        first_odor_frame = trial_data['first_odor_frame'] + 1
-        end_frame = trial_data['end_frame'] + 1
 
+    # TODO compute # of consecutive repeats, rather than assuming it is 3.
+    # port my existing code that does this.
+    n_repeats = 3
+
+    if len(trial_data_list) == n_frames:
+        tiff_frames_are = 'presentations'
+
+    elif len(trial_data_list) // n_repeats == n_frames:
+        tiff_frames_are = 'trial-averaged-odors'
+
+    else:
+        tiff_frames_are = 'time'
+        # TODO TODO err (/log to console / popup warning) if n_frames doesn't match up
+        # w/ # timepoints in movie
+        # TODO err if any frames are overlapping (/ missing)
+
+    for i, trial_data in enumerate(trial_data_list):
         # str describing all odors presented on this trial
         odors = trial_data['odors']
+
+        if tiff_frames_are == 'time':
+            start_frame = trial_data['start_frame'] + 1
+            first_odor_frame = trial_data['first_odor_frame'] + 1
+            end_frame = trial_data['end_frame'] + 1
+
+        elif tiff_frames_are == 'presentations':
+            start_frame = i + 1
+            end_frame = start_frame
+
+        # Even if the TIFF has data averaged across odor presentations, the YAML will
+        # still always have one entry per presentation (so should have n_repeats
+        # consecutive of each).
+        elif tiff_frames_are == 'trial-averaged-odors':
+            start_frame = (i // n_repeats) + 1
+            end_frame = start_frame
 
         # TODO decrease font size in general (to deal w/ long strings corresponding to
         # mixtures of two odors, but also in general). maybe use
@@ -84,17 +110,17 @@ def overlay(imp=None):
             roi = TextRoi(text_x_pos, text_y_pos, odors)
             roi.setPosition(0, 0, t)
 
-            if t != first_odor_frame:
-                roi.setColor(default_color)
+            if tiff_frames_are == 'time' and t == first_odor_frame:
+                # TODO TODO TODO why is this not working? (this else branch *is* being
+                # reached)
+                roi.setColor(first_odor_frame_color)
 
             # TODO TODO TODO need to encode a global frame duration (of odor
             # presentation) somewhere, or maybe just have add a last_odor_frame, for
             # same reason it made sense to have this rather than a global frame offset
             # anyway...
             else:
-                # TODO TODO TODO why is this not working? (this else branch *is* being
-                # reached)
-                roi.setColor(first_odor_frame_color)
+                roi.setColor(default_color)
 
             roi.setFontSize(font_size)
 

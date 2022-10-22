@@ -4,7 +4,3 @@
 - custom hotkey + plugin to allow <Delete> to work w/ ROIs in overlay, similar to
   updating/renaming stuff i have on [r]
 
-- get .desktop file I'm actually using for ImageJ loading the environment variables i
-  have in ~/.bashrc + ~/.variables correctly (or just wrap my call to my program in
-  [login?] bash invocation?)
-
