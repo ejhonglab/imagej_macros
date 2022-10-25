@@ -25,6 +25,10 @@ from ij.gui import RoiListener
 # (what i was attempting w/ ZRespectingRoiOverlayer below, and what i'm currently trying
 # to do w/ OverlayUpdaterKeyListener)
 
+# TODO one version of this (w/ modifier in addition to F2 hotkey?) to open 2 copied of
+# either ../trial_dff_concat.tif or trialmean_dff_concat.tif, so i can sync "time"points
+# again, and have one for odor overlay and one for time
+
 
 verbose = False
 
@@ -169,7 +173,9 @@ def find_roi_manager_index(target_roi, manager=None):
         if not manager:
             if verbose:
                 print 'ROI manager not open. doing nothing.'
-            return
+
+            # TODO or err
+            return None, None
 
     rois = manager.getRoisAsArray()
     index = None
@@ -179,7 +185,9 @@ def find_roi_manager_index(target_roi, manager=None):
             index = i
             n_matching += 1
 
-    assert index is not None, 'no matching ROI found!'
+    if index is None:
+        return manager, None
+
     # TODO TODO test meaningful error message if there are two w/ same name in same
     # z slice coordinate
     assert not (n_matching > 1), 'multiple ROIs with same name in >=1 Z index'
@@ -206,6 +214,8 @@ def update_matching_roi():
     # Roi stored there.
 
     manager, index = find_roi_manager_index(overlay_roi)
+    if manager is None or index is None:
+        return
 
     rename_if_unchanged = True
 
@@ -250,17 +260,73 @@ def update_matching_roi():
 def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False,
     compare_to_cached=False):
 
+    # seems this will be None if i just finished drawing an ROI (as currently
+    # implemented at least) (or presumably also if i'm drawing an ROI)
     overlay_roi = get_overlay_roi()
-    if overlay_roi is None:
+
+    manager = RoiManager.getInstance()
+    if manager is None:
         return
 
-    # TODO TODO handle case where ROI has not been added yet (probably via either saving
-    # w/o adding to list, if possible, or otherwise adding/saving/removing?)
+    added_temp_roi = False
 
-    # TODO change to work w/ multiple ROIs selected? ig it would need to be from the
-    # list though (is it possible to select multiple overlay ROIs?)?
-    manager, index = find_roi_manager_index(overlay_roi)
-    manager.deselect()
+    # TODO delete
+    verbose = True
+    #
+    if overlay_roi is not None:
+        #TODO delete
+        if verbose:
+            print 'overlay roi was not none'
+        #
+
+        # TODO change to work w/ multiple ROIs selected? ig it would need to be from the
+        # list though (is it possible to select multiple overlay ROIs?)?
+        _, index = find_roi_manager_index(overlay_roi, manager=manager)
+
+        if index is None:
+            # TODO delete
+            if verbose:
+                print 'no manager roi matching overlay roi'
+            #
+            return
+
+        # TODO delete
+        if verbose:
+            print 'found manager roi matching overlay roi'
+        #
+        manager.deselect()
+    else:
+        prev_rois = manager.getRoisAsArray()
+
+        #TODO delete
+        if verbose:
+            print 'adding roi'
+        #
+
+        # TODO TODO TODO detect if roi is finished before adding
+        # why do we not get the "Selection is not complete" popup we would get if we
+        # used the builtin 't' command to add currently-being-drawn-or-done ROI to
+        # manager? do i need to pass the image in as well or something?
+
+        # TODO may want to take steps to ensure we aren't re-adding selected ROIs
+        # already in manager (or anything like that)
+
+        # TODO detect if image has "an active selection" (that is a finished ROI, in
+        # case possible for it to not be...) -> don't bother running 'Add' cmd if not
+
+        manager.runCommand('Add')
+        # see also 2 add(...) call options (both have more args...)
+        # TODO need to deselect after or nah?
+        #manager.addRoi(overlay_roi)
+
+        if len(prev_rois) + 1 != len(manager.getRoisAsArray()):
+            return
+
+        # TODO or is this 1-based?
+        temp_roi_index = len(prev_rois)
+        index = temp_roi_index
+
+        added_temp_roi = True
 
     # TODO may need to handle case where there is only one ROI, cause not sure i want to
     # support loading .roi files (instead of the RoiSet.zip files)
@@ -269,6 +335,15 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False,
     tmp_roiset_zip_path = '/tmp/imagej_macros.plot_roi_responses.RoiSet.zip'
     success = manager.save(tmp_roiset_zip_path)
     assert success, 'saving ROIs to %s failed!' % tmp_roiset_zip_path
+
+    if added_temp_roi:
+        # TODO does the inherited (.remove() method work? via an index?)
+        # i don't see any RoiManager methods to remove ROIs...
+
+        manager.select(temp_roi_index)
+        manager.runCommand('Delete')
+
+        assert len(prev_rois) == len(manager.getRoisAsArray())
 
     conda_path = expanduser('~/anaconda3/condabin/conda')
     env_name = 'suite2p'
@@ -293,6 +368,9 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False,
     if source_bashrc:
         cmd = 'bash -ic "source ~/.bashrc && %s"' % cmd
 
+    # TODO delete
+    verbose = True
+    #
     if verbose:
         print 'running:', cmd
 

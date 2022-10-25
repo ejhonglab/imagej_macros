@@ -50,12 +50,19 @@ def main():
 
     tiffs_to_load = [
         # TODO maybe still load raw.tif if mocorr.tiff not there?
-        'mocorr.tif',
+        #'mocorr.tif',
 
-        'trial_dff.tif',
-        'trialmean_dff.tif',
+        #'trial_dff.tif',
+        #'trialmean_dff.tif',
         # TODO maybe load all files matching ../*/max_trialmean_dff.tif ?
-        #'max_trialmean_dff.tif',
+        ##'max_trialmean_dff.tif',
+
+        # Intentionally duplicated, to have one w/ odor and one w/ ROI overaly
+        # (as i can't currently support both, given how each is currently written)
+        '../trial_dff_concat.tif',
+        '../trial_dff_concat.tif',
+        '../trialmean_dff_concat.tif',
+        '../trialmean_dff_concat.tif',
 
         # This should be a symlink to one ../suite2p/mocorr_concat.tif, which should
         # itself be a directory symlink to one of the suite2p run directories under
@@ -66,9 +73,12 @@ def main():
     tiffs_to_start_with_roi_overlay = [
         'mocorr.tif',
 
-        'trial_dff.tif',
-        'trialmean_dff.tif',
-        #'max_trialmean_dff.tif',
+        #'trial_dff.tif',
+        #'trialmean_dff.tif',
+        ##'max_trialmean_dff.tif',
+
+        '../trial_dff_concat.tif',
+        '../trialmean_dff_concat.tif',
     ]
 
     n_opened = 0
