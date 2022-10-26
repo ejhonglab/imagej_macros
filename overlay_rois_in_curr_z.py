@@ -227,18 +227,17 @@ def update_matching_roi():
             if verbose:
                 print 'ROI not changed! doing nothing!'
         else:
+            old_name = roi.getName(index)
             # Second argument is default string. The empty string will *also* be
             # returned if user cancels the dialog.
-            new_name = IJ.getString('New ROI name:', '')
-            if new_name == '':
+            new_name = IJ.getString('New ROI name:', old_name)
+            if new_name == old_name:
                 return
 
             # TODO TODO rename anything sharing same name as well
             # (consistent w/ how number_rois.py works on numbered ROIs + QoL)
 
             manager.rename(index, new_name)
-
-            # TODO also update overlay here, if i ever get that figured out
 
         return
 
@@ -250,6 +249,37 @@ def update_matching_roi():
     assert rois_equal(new_roi, overlay_roi)
     assert new_roi.equals(overlay_roi)
     assert rois_equal(old_roi, new_roi)
+
+
+def delete_matching_roi():
+    verbose = False
+
+    overlay_roi = get_overlay_roi()
+    if overlay_roi is None:
+        if verbose:
+            print 'no overlay roi'
+
+        return
+
+    manager, index = find_roi_manager_index(overlay_roi)
+    if manager is None or index is None:
+        if verbose:
+            print 'manager not open or no matching index'
+
+        return
+
+    # Just in case the .select call adds to selection rather than overwriting it.
+    # Not sure of the behavior.
+    manager.deselect()
+
+    if verbose:
+        print 'deleting roi at index', str(index)
+
+    manager.select(index)
+    manager.runCommand('Delete')
+
+    # TODO deselect overlay automatically if possible (to achieve same thing as clicking
+    # off of it, where it goes away)
 
 
 # TODO move this to its own script, if i figure out how to factor the stuff this shares
@@ -271,7 +301,7 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False,
     added_temp_roi = False
 
     # TODO delete
-    verbose = True
+    verbose = False
     #
     if overlay_roi is not None:
         #TODO delete
@@ -294,6 +324,9 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False,
         if verbose:
             print 'found manager roi matching overlay roi'
         #
+
+        # TODO if i actually need the deselect() call further down, just move outside
+        # conditional and have one call
         manager.deselect()
     else:
         prev_rois = manager.getRoisAsArray()
@@ -322,7 +355,6 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False,
         if len(prev_rois) + 1 != len(manager.getRoisAsArray()):
             return
 
-        # TODO or is this 1-based?
         temp_roi_index = len(prev_rois)
         index = temp_roi_index
 
@@ -337,8 +369,9 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False,
     assert success, 'saving ROIs to %s failed!' % tmp_roiset_zip_path
 
     if added_temp_roi:
-        # TODO does the inherited (.remove() method work? via an index?)
-        # i don't see any RoiManager methods to remove ROIs...
+        # Just in case the .select call adds to selection rather than overwriting it.
+        # Not sure of the behavior.
+        manager.deselect()
 
         manager.select(temp_roi_index)
         manager.runCommand('Delete')
@@ -428,7 +461,19 @@ class OverlayUpdaterKeyListener(KeyAdapter):
             # TODO implement a version of this but for deleting (or via arg?)
             update_matching_roi()
 
-        elif key_code == KeyEvent.VK_DELETE:
+        # NOTE: both backspace and delete seem to delete overlay ROIs by default
+        # (but not from the manager, just from the overlay). so I will make a hotkey to
+        # make it do nothing in my startup config.
+        # actually i can't get a do-nothing macro w/ "[backspace]" to work...
+        # so i'll override default d->draw instead
+        #elif key_code == KeyEvent.VK_BACK_SPACE:
+        elif key_code == KeyEvent.VK_D:
+            delete_matching_roi()
+
+        # TODO test if this works (doesn't seem to, i.e. the overlay is not updated
+        # after rois are renumbered). might just need to refactor and explicitly call
+        # renumber in here (at least i can still double tap n to update, as it is now)
+        elif key_code == KeyEvent.VK_N:
             pass
 
         elif key_code == KeyEvent.VK_P:
@@ -459,8 +504,6 @@ class OverlayUpdaterKeyListener(KeyAdapter):
             draw_labels=self.draw_labels,
             black_behind_text=self.black_behind_text
         )
-        # TODO intercept at least t/r[/delete if i implement using that to delete ROIs]
-        # TODO try to pass thru everything else somehow
 
 
 # TODO probably just move this into the __init__ of the listener

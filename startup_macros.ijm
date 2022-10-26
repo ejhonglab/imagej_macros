@@ -15,6 +15,14 @@ macro "Do nothing [s]" {
 macro "Do nothing [p]" {
 }
 
+// Overrides default 'draw' hotkey
+macro "Do nothing [d]" {
+}
+
+// Didn't work (still deselected overlay ROI at least...)
+//macro "Do nothing [backspace]" {
+//}
+
 macro "Plot ROI time profile  [f1]" {
 	run("Plot Z-axis Profile", "Profile=time");
 
