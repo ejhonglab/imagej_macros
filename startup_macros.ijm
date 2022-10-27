@@ -66,3 +66,13 @@ macro "Update matching ROI [r]" {
 macro "Number ROIs [n]" {
     run("number rois");
 }
+
+// f10 seems to open a menu whether i have a macro on it or not. maybe OS?
+// f11-12 don't *seem* to do anything by default
+macro "Restore window positions [f11]" {
+    run("restore window positions");
+}
+macro "Save window positions [f12]" {
+    run("save window positions");
+}
+
