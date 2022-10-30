@@ -29,6 +29,9 @@ def overlay(imp=None):
     tiff_dir = split(abs_tiff_path)[0]
 
     json_fname = join(tiff_dir, 'trial_frames_and_odors.json')
+    if verbose:
+        print 'odor/frame json:', json_fname
+
     if not exists(json_fname):
         print 'odor / frame info did not exist at:', json_fname
         print 'doing nothing!'

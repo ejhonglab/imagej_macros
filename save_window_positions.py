@@ -23,6 +23,10 @@ def main():
     # getAllNonImageWindows returns, rather than getNonImageWindows, if it matters
     titles = WindowManager.getImageTitles() + WindowManager.getNonImageTitles()
 
+    # TODO TODO try to save/restore position of ROI manager window, synchronize windows
+    # dialog, and main imagej toolbar as well. not included in json now, so
+    # getNonImageTitles / something downstream isn't working as intended
+
     title2window_data = dict()
     for title in WindowManager.getImageTitles():
         window = WindowManager.getWindow(title)

@@ -378,13 +378,21 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False,
 
         assert len(prev_rois) == len(manager.getRoisAsArray())
 
-    conda_path = expanduser('~/anaconda3/condabin/conda')
+    #conda_path = expanduser('~/anaconda3/condabin/conda')
+    # Now that I'm sourcing ~/.bashrc, this should be fine, and it doesn't matter if the
+    # conda executable is in the same path then (e.g. miniconda)
+    conda_path = 'conda'
+
     env_name = 'suite2p'
     plot_script_path = expanduser('~/src/al_analysis/plot_roi.py')
 
     imp = IJ.getImage()
     file_info = imp.getOriginalFileInfo()
     analysis_dir = file_info.directory
+
+    # shlex.quote not available in this jython stdlib, but want to at least try to
+    # escape spaces
+    analysis_dir = "'%s'" % analysis_dir
 
     # TODO replace w/ named format string elements + RHS dict (work?)
     cmd = '%s run -n %s --no-capture-output %s -d %s -r %s -i %s' % (
