@@ -15,6 +15,11 @@ macro "Do nothing [s]" {
 macro "Do nothing [p]" {
 }
 
+// For plot_roi_responses(hallem=True), via overlay listener
+// NOTE: [shift+h] did NOT work, but [H] did
+macro "Do nothing [H]" {
+}
+
 // Overrides default 'draw' hotkey
 macro "Do nothing [d]" {
 }

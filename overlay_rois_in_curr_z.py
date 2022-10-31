@@ -287,7 +287,7 @@ def delete_matching_roi():
 # (though if IJ.run just won't ever work inside the listener, not sure i can factor it
 # out anyway... not sure why it froze when i was trying to call update_matching_roi that
 # way)
-def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False,
+def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=False,
     compare_to_cached=False):
 
     # seems this will be None if i just finished drawing an ROI (as currently
@@ -402,6 +402,9 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False,
     if add_to_existing_plot:
         cmd = cmd + ' -a'
 
+    if hallem:
+        cmd = cmd + ' -H'
+
     # TODO technically could probably avoid sourcing + even activating conda environment
     # as long as we already have one plotting server process running (cause the
     # non-stdlib imports don't happen in the client path in al_analysis/plot_roi.py)
@@ -483,6 +486,32 @@ class OverlayUpdaterKeyListener(KeyAdapter):
         # renumber in here (at least i can still double tap n to update, as it is now)
         elif key_code == KeyEvent.VK_N:
             pass
+
+        elif key_code == KeyEvent.VK_P:
+            #alt_down = event.isAltDown()
+            #shift_down = event.isShiftDown()
+            #if alt_down:
+            #    if not shift_down:
+            #        add_to_existing_plot = True
+            #        hallem = False
+            #    else:
+            #        add_to_existing_plot = False
+            #        hallem = True
+
+            add_to_existing_plot = True
+            hallem = False
+            # Ctrl/Shift + p already have builtin ImageJ meanings
+            # (I could probably override them to do nothing, but still...)
+            plot_roi_responses(add_to_existing_plot=add_to_existing_plot,
+                hallem=hallem
+            )
+            return
+
+        # shift+h not mentioned in docs I can see, but it does seem to do something
+        # Don't think I care about it though, so I'm unmapping it via startup config.
+        elif key_code == KeyEvent.VK_H and event.isShiftDown():
+            plot_roi_responses(hallem=True)
+            return
 
         elif key_code == KeyEvent.VK_P:
             # Ctrl/Shift + p already have builtin ImageJ meanings
