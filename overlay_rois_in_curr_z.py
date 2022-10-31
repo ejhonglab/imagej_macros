@@ -227,7 +227,7 @@ def update_matching_roi():
             if verbose:
                 print 'ROI not changed! doing nothing!'
         else:
-            old_name = roi.getName(index)
+            old_name = old_roi.getName()
             # Second argument is default string. The empty string will *also* be
             # returned if user cancels the dialog.
             new_name = IJ.getString('New ROI name:', old_name)
