@@ -5,3 +5,9 @@
   updating/renaming stuff i have on [r]
 
 - remap Ctrl-S to save ROI manager ROIs
+
+- change F2 hotkey to only load the processed TIFFs by default, and maybe other hotkeys
+  (perhaps F2 w/ some modifiers?) for also loading mocorr_concat.tif + processed TIFFs?
+
+  - maybe more importantly, another hotkey for loading raw + mocorr concat TIFFs only,
+    for evaluation of mocorr quality

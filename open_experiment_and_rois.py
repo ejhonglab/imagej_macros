@@ -67,8 +67,8 @@ def main():
 
     # Intentionally duplicated, to have one w/ odor and one w/ ROI overaly
     # (as i can't currently support both, given how each is currently written)
-    ] + 2 * [
-        '../trial_dff_concat.tif',
+    #] + 2 * [
+    #    '../trial_dff_concat.tif',
     ] + 2 * [
         '../trialmean_dff_concat.tif',
     ] + [
