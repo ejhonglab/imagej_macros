@@ -1,4 +1,6 @@
 
+#@ boolean (label="For motion correction eval only", value=false) mocorr_eval_only
+
 from os.path import join, exists
 
 from ij import IJ
@@ -12,17 +14,52 @@ from ij.plugin import Zoom
 def main():
     verbose = False
 
-    # Will open ROI manager window if not already open.
-    manager = RoiManager.getRoiManager()
+    if not mocorr_eval_only:
+        load_rois = True
 
-    load_rois = True
+        # If a name is specified multiple times, that many copies of the TIFF will be
+        # opened. Useful for having different types of overlays (currently haven't
+        # figured out how to get them to co-exist...) side-by-side
+        tiffs_to_load = [
+            # TODO maybe still load raw.tif if mocorr.tiff not there?
+            #'mocorr.tif',
 
-    rois = manager.getRoisAsArray()
-    if len(rois) > 0:
-        print ('ROI manager already has ROIs! assuming compatible.'
-            ' will NOT load RoiSet.zip!'
-        )
+            #'trial_dff.tif',
+            #'trialmean_dff.tif',
+            # TODO maybe load all files matching ../*/max_trialmean_dff.tif ?
+            ##'max_trialmean_dff.tif',
+
+            # TODO maybe also write and load an average TIFF? something like stddev too?
+
+        # Intentionally duplicated, to have one w/ odor and one w/ ROI overaly
+        # (as i can't currently support both, given how each is currently written)
+        #] + 2 * [
+        #    '../trial_dff_concat.tif',
+        ] + 2 * [
+            '../trialmean_dff_concat.tif',
+        ]
+
+    else:
+        # TODO still overlay odor info in this case
         load_rois = False
+        # TODO maybe also load raw in this case?
+        tiffs_to_load = [
+            # This should be a symlink to one ../suite2p/mocorr_concat.tif, which should
+            # itself be a directory symlink to one of the suite2p run directories under
+            # ../suite2p_runs (e.g. ../suite2p_runs/<run number>/suite2p)
+            '../mocorr_concat.tif',
+        ]
+
+    if load_rois:
+        # Will open ROI manager window if not already open.
+        manager = RoiManager.getRoiManager()
+
+        rois = manager.getRoisAsArray()
+        if len(rois) > 0:
+            print ('ROI manager already has ROIs! assuming compatible.'
+                ' will NOT load RoiSet.zip!'
+            )
+            load_rois = False
 
     chooser = DirectoryChooser('Select experiment directory...')
 
@@ -51,49 +88,24 @@ def main():
         else:
             manager.runCommand('Open', roiset_path)
 
-    # If a name is specified multiple times, that many copies of the TIFF will be
-    # opened. Useful for having different types of overlays (currently haven't figured
-    # out how to get them to co-exist...) side-by-side
-    tiffs_to_load = [
-        # TODO maybe still load raw.tif if mocorr.tiff not there?
-        #'mocorr.tif',
+        # If any TIFF is specified multiple times in tiffs_to_load, and is in this list,
+        # one will recieve this overlay and the other will receive the odor overlay.
+        tiffs_to_start_with_roi_overlay = [
+            'mocorr.tif',
 
-        #'trial_dff.tif',
-        #'trialmean_dff.tif',
-        # TODO maybe load all files matching ../*/max_trialmean_dff.tif ?
-        ##'max_trialmean_dff.tif',
+            #'trial_dff.tif',
+            #'trialmean_dff.tif',
+            ##'max_trialmean_dff.tif',
 
-        # TODO maybe also write and save an average TIFF? something like stddev too?
-
-    # Intentionally duplicated, to have one w/ odor and one w/ ROI overaly
-    # (as i can't currently support both, given how each is currently written)
-    #] + 2 * [
-    #    '../trial_dff_concat.tif',
-    ] + 2 * [
-        '../trialmean_dff_concat.tif',
-    ] + [
-        # This should be a symlink to one ../suite2p/mocorr_concat.tif, which should
-        # itself be a directory symlink to one of the suite2p run directories under
-        # ../suite2p_runs (e.g. ../suite2p_runs/<run number>/suite2p)
-        '../mocorr_concat.tif',
-    ]
-
-    # If any TIFF is specified multiple times in tiffs_to_load, and is in this list,
-    # one will recieve this overlay and the other will receive the odor overlay.
-    tiffs_to_start_with_roi_overlay = [
-        'mocorr.tif',
-
-        #'trial_dff.tif',
-        #'trialmean_dff.tif',
-        ##'max_trialmean_dff.tif',
-
-        '../trial_dff_concat.tif',
-        '../trialmean_dff_concat.tif',
-    ]
-
-    tiffs_to_start_with_odor_overlay = {
-        x for x in set(tiffs_to_load) if tiffs_to_load.count(x) > 1
-    }
+            '../trial_dff_concat.tif',
+            '../trialmean_dff_concat.tif',
+        ]
+        tiffs_to_start_with_odor_overlay = {
+            x for x in set(tiffs_to_load) if tiffs_to_load.count(x) > 1
+        }
+    else:
+        tiffs_to_start_with_roi_overlay = []
+        tiffs_to_start_with_odor_overlay = set(tiffs_to_load)
 
     n_opened = 0
     for tiff_basename in tiffs_to_load:

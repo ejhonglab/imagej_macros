@@ -35,8 +35,12 @@ macro "Plot ROI time profile  [f1]" {
 	//run("t project in raw");
 }
 
-macro "Load experiment  [f2]" {
-	run("open experiment and rois");
+macro "Load experiment  [1]" {
+	run("open experiment and rois", "mocorr_eval_only=true");
+}
+
+macro "Load experiment  [2]" {
+	run("open experiment and rois", "mocorr_eval_only=false");
 }
 
 macro "Custom ROI overlay (with names)  [f3]" {
