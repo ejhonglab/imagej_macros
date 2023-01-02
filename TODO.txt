@@ -11,3 +11,6 @@
 
   - maybe more importantly, another hotkey for loading raw + mocorr concat TIFFs only,
     for evaluation of mocorr quality
+
+- why (on atlas) does shift+p seem to do what alt+p is supposed to do (in addition to
+  doing something else first...)?
