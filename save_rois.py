@@ -4,7 +4,7 @@ from zipfile import ZipFile
 import tempfile
 from shutil import rmtree
 
-from ij import IJ
+from ij import IJ, WindowManager
 from ij.plugin.frame import RoiManager
 
 
@@ -61,7 +61,13 @@ def zip_contents_equal(filename1, filename2):
 def main():
     verbose = False
 
+    n_open_images = WindowManager.getImageCount()
+    if n_open_images == 0:
+        return
+
     imp = IJ.getImage()
+    # Will actually fail with an ugly error before this (at least if nothing is open,
+    # maybe not if we just have something else selected?)
     if imp is None:
         return
 

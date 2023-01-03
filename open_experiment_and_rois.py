@@ -3,10 +3,12 @@
 
 from os.path import join, exists
 
+from java.awt import Checkbox
+from java.awt.event import ActionEvent
+
 from ij import IJ
-from ij.plugin.frame import RoiManager
+from ij.plugin.frame import RoiManager, SyncWindows
 from ij.io import DirectoryChooser, Opener
-from ij.plugin import Zoom
 
 
 # TODO if experiment / ROIs already open, maybe just save ROIs to ROI zip?
@@ -147,10 +149,33 @@ def main():
         # TODO delete zoom stuff above if i also get this to restore sizes (=zooms?)
         IJ.run('restore window positions')
 
-        # NOTE: need to manually select all the windows to sync in list. haven't found a
-        # workaround yet. also need to manually deselect the sync T frames option
-        # (and lately also the cursor option)
         IJ.run('Synchronize Windows')
+
+        window_syncer = SyncWindows.getInstance()
+        assert window_syncer is not None
+
+        # TODO may want to find Panel components member that is a Panel (and assert only
+        # 1) rather than hardcoding index...
+        #
+        # This is a parent panel, but not the direct parent of the relevant checkboxes.
+        parent_panel = window_syncer.components[0]
+
+        # This should be the child Panel that contains the checkboxes.
+        checkbox_panel = parent_panel.components[1]
+
+        for c in checkbox_panel.components:
+            if c.label == 'Sync cursor':
+                # Default for this is True
+                c.setState(False)
+
+            elif c.label == 'Synchronize All':
+                button = c
+                # Should be the same as clicking the button.
+                # https://stackoverflow.com/questions/4753004
+                action_name = button.getActionCommand()
+                event = ActionEvent(button, ActionEvent.ACTION_PERFORMED, action_name)
+                for listener in button.getActionListeners():
+                    listener.actionPerformed(event)
 
     IJ.setTool('polygon')
 

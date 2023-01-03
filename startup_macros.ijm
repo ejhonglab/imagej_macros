@@ -11,15 +11,6 @@ macro "Do nothing [w]" {
 // accident?
 macro "Save ROIs [s]" {
     run("save rois");
-
-    // TODO somehow use current RoiSet.zip path as file_path
-    // Docs indicate I shouldn't need to deselect first here
-    //print(getDirectory("image"));
-    //print(getDirectory("image") + "RoiSet.zip");
-    //roiManager("save", getDirectory("image"));
-
-    // doesn't work w/o file_path argument
-    //roiManager("save");
 }
 
 // Since I want to use this for overlay listener [p] -> plot_roi_responses binding.
