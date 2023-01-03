@@ -80,9 +80,6 @@ def overlay(imp=None):
         # TODO err if any frames are overlapping (/ missing)
 
     for i, trial_data in enumerate(trial_data_list):
-        # str describing all odors presented on this trial
-        odors = trial_data['odors']
-
         if tiff_frames_are == 'time':
             start_frame = trial_data['start_frame'] + 1
             first_odor_frame = trial_data['first_odor_frame'] + 1
@@ -99,6 +96,16 @@ def overlay(imp=None):
             start_frame = (i // n_repeats) + 1
             end_frame = start_frame
 
+        # str describing all odors presented on this trial
+        odor_str = trial_data['odors']
+
+        # Ideally would use a single master ledger of which odors should narrowly
+        # activate a particular glomerulus, and check all odors for proximity to odors
+        # in this list, but YAML not available here (at least not in jython stdlib),
+        # so I couldn't use my tom_olfactometer_config YAML files directly.
+        if 'glomerulus' in trial_data:
+            odor_str += (' (%s)' % trial_data['glomerulus'])
+
         # TODO decrease font size in general (to deal w/ long strings corresponding to
         # mixtures of two odors, but also in general). maybe use
         # TextRoi.setDefaultFontSize? or one of the other constructors where you also
@@ -110,7 +117,7 @@ def overlay(imp=None):
         # would need info about end...) (could at least do on first frame...)
         # TODO or maybe show a separate overlay component when odor is on (e.g. dot)?
         for t in range(start_frame, end_frame + 1):
-            roi = TextRoi(text_x_pos, text_y_pos, odors)
+            roi = TextRoi(text_x_pos, text_y_pos, odor_str)
             roi.setPosition(0, 0, t)
 
             if tiff_frames_are == 'time' and t == first_odor_frame:
