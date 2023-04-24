@@ -10,6 +10,8 @@
 from os.path import expanduser, split
 import time
 import shlex
+# TODO delete
+#from pprint import pprint
 
 from java.lang import ProcessBuilder
 from java.lang.ProcessBuilder import Redirect
@@ -29,8 +31,105 @@ from ij.gui import RoiListener
 # either ../trial_dff_concat.tif or trialmean_dff_concat.tif, so i can sync "time"points
 # again, and have one for odor overlay and one for time
 
-
 verbose = False
+
+# TODO TODO TODO either here or via startup macros, override / add-to default 't'
+# actions to also prompt for a name for the roi (at least shift+t or something)?
+# TODO TODO TODO try to get to update in all windows with overlays when any window with
+# an overlay has an ROI change (change so i only have one listener and register it w/
+# all the windows?)
+# TODO TODO TODO make n -> renumber_rois also update any active overlays
+class OverlayUpdaterKeyListener(KeyAdapter):
+    draw_names = False
+    draw_labels = False
+    black_behind_text = False
+
+    def keyPressed(self, event):
+        # TODO do i ignore the keyevent if imp isn't one we added listener too?
+        # ig i shouldn't get events from any windows i didn't add a listener to
+        # anyway...
+        # TODO maybe share one listener for all images? would need something like a dict
+        # to store settings then, w/ image ID as key...
+        imp = event.getSource().getImage()
+        key_code = event.getKeyCode()
+
+        if key_code == KeyEvent.VK_T:
+            # I might have encountered some times where the ROI manager add didn't
+            # get processed before we try to update the overlay below... May need to
+            # manually handle the add in here and deal with that hotkey if it keeps
+            # happening.
+            time.sleep(0.2)
+
+        # TODO why does this one not seem to work, but t does?
+        # (as in the original hotkey not getting triggered separately)
+        elif key_code == KeyEvent.VK_R:
+            # NOTE: I have a corresponding StartupMacros.fiji.ijm entry to disable the
+            # default 'r' hotkey.
+            # TODO implement a version of this but for deleting (or via arg?)
+            update_matching_roi()
+
+        # NOTE: both backspace and delete seem to delete overlay ROIs by default
+        # (but not from the manager, just from the overlay). so I will make a hotkey to
+        # make it do nothing in my startup config.
+        # actually i can't get a do-nothing macro w/ "[backspace]" to work...
+        # so i'll override default d->draw instead
+        #elif key_code == KeyEvent.VK_BACK_SPACE:
+        elif key_code == KeyEvent.VK_D:
+            delete_matching_roi()
+
+        # TODO test if this works (doesn't seem to, i.e. the overlay is not updated
+        # after rois are renumbered). might just need to refactor and explicitly call
+        # renumber in here (at least i can still double tap n to update, as it is now)
+        elif key_code == KeyEvent.VK_N:
+            pass
+
+        # TODO TODO TODO def don't always require named glomeruli need a match
+        # (so either use another option to require that, when we want it, or just warn
+        # if we ROI is named and not found in cached responses)
+
+        # shift+h not mentioned in docs I can see, but it does seem to do something
+        # Don't think I care about it though, so I'm unmapping it via startup config.
+        #
+        # TODO why the event.isShiftDown()? what is 'h' by default?
+        elif key_code == KeyEvent.VK_H and event.isShiftDown():
+            plot_roi_responses(hallem=True)
+            return
+
+        elif key_code == KeyEvent.VK_P:
+            # Ctrl/Shift + p already have builtin ImageJ meanings
+            # (I could probably override them to do nothing, but still...)
+            plot_roi_responses(add_to_existing_plot=event.isAltDown())
+            return
+
+        #elif key_code == KeyEvent.VK_0:
+        #    # TODO get max odor response (via script similar to plot_roi_responses,
+        #    # or by a new arg to plot_roi_responses) -> go to index of that odor
+        #    #plot_roi_responses(add_to_existing_plot=event.isAltDown())
+        #    return
+
+        else:
+            return
+
+        # TODO TODO ideally, would still also update ROI overlay whenever an ROI stops
+        # being edited (to revert a change that has not been saved into ROI manager w/
+        # 'r', but that will stay changed in overlay until manually updated)
+        # TODO could maybe do by also intercepting mouse clicks, though this listener
+        # doesn't seem to do that
+
+        # TODO ideally would also trigger when stuff is deleted / renamed / etc from ROI
+        # manager window directly
+
+        # TODO TODO may want my hotkey to clear the overlay to remove this listener
+        # too... maybe just intercept that key in listener and have it delete itself?
+
+        # TODO make sure these properties actually persist from when listener first
+        # established
+        overlay(imp,
+            draw_names=self.draw_names,
+            draw_labels=self.draw_labels,
+            black_behind_text=self.black_behind_text
+        )
+
 
 def print_roi(roi):
     print 'roi:', roi
@@ -231,6 +330,10 @@ def update_matching_roi():
             # Second argument is default string. The empty string will *also* be
             # returned if user cancels the dialog.
             new_name = IJ.getString('New ROI name:', old_name)
+
+            if len(new_name) == 0:
+                return
+
             if new_name == old_name:
                 return
 
@@ -430,117 +533,29 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
     plot_script_dir = File(split(plot_script_path)[0])
     pb.directory(plot_script_dir)
 
+    # TODO is this actually doing anything? what was the point?
     # TODO or maybe i actually want to capture the output, and print it?
     pb.redirectOutput(Redirect.INHERIT)
     pb.redirectError(Redirect.INHERIT)
 
+    # TODO print out PID started? other details?
+
+    # TODO delete
+    #print 'before pb.start'
+    ##
     proc = pb.start()
+    ## TODO delete
+    #print 'after pb.start'
+    # for some reason, this would only print if the following print was added...
+    #pprint(dir(proc))
+    #print 'after dir print'
+    #
 
+    # TODO TODO how to something from the script? ideally w/o using files behind the
+    # scenes... (want to be able to jump to max response index, or cycle through them in
+    # order)
 
-# TODO TODO TODO either here or via startup macros, override / add-to default 't'
-# actions to also prompt for a name for the roi (at least shift+t or something)?
-# TODO TODO TODO try to get to update in all windows with overlays when any window with
-# an overlay has an ROI change (change so i only have one listener and register it w/
-# all the windows?)
-# TODO TODO TODO make n -> renumber_rois also update any active overlays
-class OverlayUpdaterKeyListener(KeyAdapter):
-    draw_names = False
-    draw_labels = False
-    black_behind_text = False
-
-    def keyPressed(self, event):
-        # TODO do i ignore the keyevent if imp isn't one we added listener too?
-        # ig i shouldn't get events from any windows i didn't add a listener to
-        # anyway...
-        # TODO maybe share one listener for all images? would need something like a dict
-        # to store settings then, w/ image ID as key...
-        imp = event.getSource().getImage()
-        key_code = event.getKeyCode()
-
-        if key_code == KeyEvent.VK_T:
-            # I might have encountered some times where the ROI manager add didn't
-            # get processed before we try to update the overlay below... May need to
-            # manually handle the add in here and deal with that hotkey if it keeps
-            # happening.
-            time.sleep(0.2)
-
-        # TODO why does this one not seem to work, but t does?
-        # (as in the original hotkey not getting triggered separately)
-        elif key_code == KeyEvent.VK_R:
-            # NOTE: I have a corresponding StartupMacros.fiji.ijm entry to disable the
-            # default 'r' hotkey.
-            # TODO implement a version of this but for deleting (or via arg?)
-            update_matching_roi()
-
-        # NOTE: both backspace and delete seem to delete overlay ROIs by default
-        # (but not from the manager, just from the overlay). so I will make a hotkey to
-        # make it do nothing in my startup config.
-        # actually i can't get a do-nothing macro w/ "[backspace]" to work...
-        # so i'll override default d->draw instead
-        #elif key_code == KeyEvent.VK_BACK_SPACE:
-        elif key_code == KeyEvent.VK_D:
-            delete_matching_roi()
-
-        # TODO test if this works (doesn't seem to, i.e. the overlay is not updated
-        # after rois are renumbered). might just need to refactor and explicitly call
-        # renumber in here (at least i can still double tap n to update, as it is now)
-        elif key_code == KeyEvent.VK_N:
-            pass
-
-        elif key_code == KeyEvent.VK_P:
-            #alt_down = event.isAltDown()
-            #shift_down = event.isShiftDown()
-            #if alt_down:
-            #    if not shift_down:
-            #        add_to_existing_plot = True
-            #        hallem = False
-            #    else:
-            #        add_to_existing_plot = False
-            #        hallem = True
-
-            add_to_existing_plot = True
-            hallem = False
-            # Ctrl/Shift + p already have builtin ImageJ meanings
-            # (I could probably override them to do nothing, but still...)
-            plot_roi_responses(add_to_existing_plot=add_to_existing_plot,
-                hallem=hallem
-            )
-            return
-
-        # shift+h not mentioned in docs I can see, but it does seem to do something
-        # Don't think I care about it though, so I'm unmapping it via startup config.
-        elif key_code == KeyEvent.VK_H and event.isShiftDown():
-            plot_roi_responses(hallem=True)
-            return
-
-        elif key_code == KeyEvent.VK_P:
-            # Ctrl/Shift + p already have builtin ImageJ meanings
-            # (I could probably override them to do nothing, but still...)
-            plot_roi_responses(add_to_existing_plot=event.isAltDown())
-            return
-
-        else:
-            return
-
-        # TODO TODO ideally, would still also update ROI overlay whenever an ROI stops
-        # being edited (to revert a change that has not been saved into ROI manager w/
-        # 'r', but that will stay changed in overlay until manually updated)
-        # TODO could maybe do by also intercepting mouse clicks, though this listener
-        # doesn't seem to do that
-
-        # TODO ideally would also trigger when stuff is deleted / renamed / etc from ROI
-        # manager window directly
-
-        # TODO TODO may want my hotkey to clear the overlay to remove this listener
-        # too... maybe just intercept that key in listener and have it delete itself?
-
-        # TODO make sure these properties actually persist from when listener first
-        # established
-        overlay(imp,
-            draw_names=self.draw_names,
-            draw_labels=self.draw_labels,
-            black_behind_text=self.black_behind_text
-        )
+    # TODO possible to print when things proc ends (for debugging)?
 
 
 # TODO probably just move this into the __init__ of the listener

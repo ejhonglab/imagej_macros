@@ -168,6 +168,10 @@ def main():
                 # Default for this is True
                 c.setState(False)
 
+            # TODO TODO how could i sync only specific ones?
+            # manually would click in list. list component also available,
+            # via parent_panel.components[0]
+            # TODO could try just opening ones i don't want to sync after this
             elif c.label == 'Synchronize All':
                 button = c
                 # Should be the same as clicking the button.

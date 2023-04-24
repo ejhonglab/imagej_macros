@@ -8,9 +8,8 @@ from ij import IJ, WindowManager
 from ij.plugin.frame import RoiManager
 
 
-BUFSIZE = 1024
-
-
+# NOTE: copied to ijroi module, but can't easily share until proper python (w/ modules)
+# is supported in ImageJ
 def zip_contents_equal(filename1, filename2):
     """
     Compare two ZipFiles to see if they would expand into the same directory structure
@@ -18,6 +17,8 @@ def zip_contents_equal(filename1, filename2):
 
     From RootTwo's answer at https://stackoverflow.com/questions/66524269
     """
+    BUFSIZE = 1024
+
     with ZipFile(filename1, 'r') as zip1, ZipFile(filename2, 'r') as zip2:
 
         # Index items in the ZipFiles by filename. For duplicate filenames, a later
@@ -104,7 +105,6 @@ def main():
     assert 'diag' in parts[-2], parts[-2]
     assert '..' == parts[-1], parts[-1]
 
-
     exp_dir = sep.join(parts[:-1])
     assert isdir(exp_dir), ('%s was not a directory!' % exp_dir)
 
@@ -149,7 +149,9 @@ def main():
     # All ROIs will be saved. Does not matter if we have ROI(s) selected (either via my
     # overlay or via ROI manager list)
     # TODO TODO test behavior in case only 1 ROI is in list
+    # TODO include time written?
     manager.runCommand('Save', roiset_path)
+    print 'saved ROIs to %s' % roiset_path
 
 
 if __name__ == '__main__':
