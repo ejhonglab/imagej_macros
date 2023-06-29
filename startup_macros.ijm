@@ -88,3 +88,13 @@ macro "Save window positions [f12]" {
     run("save window positions");
 }
 
+// TODO possible to get this behind spacebar? [spacebar] or [space] didn't seem to work
+// Overrides default "Select all"
+macro "Play [a]" {
+    // TODO TODO how to get it to toggle though?
+    run("Animation Options...", "speed=5 start");
+}
+macro "Play [A]" {
+    // TODO TODO how to get it to toggle though?
+    run("Animation Options...", "speed=3 start");
+}

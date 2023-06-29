@@ -299,6 +299,8 @@ def find_roi_manager_index(target_roi, manager=None):
 # not updated (also try to get it to work to also add the ROI, if it hasn't even been
 # added to the ROI manager)
 def update_matching_roi():
+    # TODO TODO abort w/ error message if trying to rename an roi to the same name as
+    # another roi already in the same plane (as then other update calls will fail)
     overlay_roi = get_overlay_roi()
     if overlay_roi is None:
         return

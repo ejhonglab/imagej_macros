@@ -1,10 +1,14 @@
+- hotkey to close all open images and ROI manager (making sure ROI manager wouldn't have
+  ROIs if opened again) (so that the 1/2 hotkeys can be used again w/o worrying, or just
+  modify them to clear ROI manager [unless/if modifier?])
+
+- add script / plot_roi.py option to go to plane that would be used as max for a given
+  ROI name
 
 - add a script + hotkey to sort ROIs by (depth, name) (not sure in which sort order)
 
-- custom hotkey + plugin to allow <Delete> to work w/ ROIs in overlay, similar to
-  updating/renaming stuff i have on [r]
-
-- remap Ctrl-S to save ROI manager ROIs
+- if i ever get an add hotkey going that auto-opens the rename dialog, also try to
+  default to glomerulus of any cognate diagnostic (if not on current plane yet)
 
 - change F2 hotkey to only load the processed TIFFs by default, and maybe other hotkeys
   (perhaps F2 w/ some modifiers?) for also loading mocorr_concat.tif + processed TIFFs?
