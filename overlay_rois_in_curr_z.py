@@ -7,7 +7,8 @@
 
 # Will remove any existing overlay
 
-from os.path import expanduser, split
+from os import getenv
+from os.path import expanduser, split, join, isdir, exists
 import time
 import shlex
 # TODO delete
@@ -499,13 +500,9 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
 
         assert len(prev_rois) == len(manager.getRoisAsArray())
 
-    #conda_path = expanduser('~/anaconda3/condabin/conda')
-    # Now that I'm sourcing ~/.bashrc, this should be fine, and it doesn't matter if the
-    # conda executable is in the same path then (e.g. miniconda)
-    conda_path = 'conda'
-
-    env_name = 'suite2p'
+    # TODO assert this exists?
     plot_script_path = expanduser('~/src/al_analysis/plot_roi.py')
+    plot_script_dir = split(plot_script_path)[0]
 
     imp = IJ.getImage()
     file_info = imp.getOriginalFileInfo()
@@ -515,9 +512,61 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
     # escape spaces
     analysis_dir = "'%s'" % analysis_dir
 
-    # TODO replace w/ named format string elements + RHS dict (work?)
-    cmd = '%s run -n %s --no-capture-output %s -d %s -r %s -i %s' % (
-        conda_path, env_name, plot_script_path, analysis_dir, tmp_roiset_zip_path, index
+    # TODO TODO env var(s) to select which conda env / venv to use
+    # (default to trying conda env w/ name "al_analysis")
+    # TODO TODO or default to .venv/venv in plot_script_path?
+    # TODO TODO support using a venv? how?
+
+    # Seems to work (at least if started from a terminal...)
+    conda_env_name = getenv('AL_ANALYSIS_CONDA_ENV')
+
+    venv_python = None
+    if conda_env_name is None:
+        # TODO also env var to force a path here?
+        possible_venv_dir_names = ['venv', '.venv']
+
+        for n in possible_venv_dir_names:
+            venv_dir = join(plot_script_dir, n)
+            if not isdir(venv_dir):
+                continue
+
+            if verbose:
+                print('using venv found at: ' + venv_dir)
+
+            # Assuming python -> python3 (seems to be reliable)
+            venv_python = join(venv_dir, 'bin', 'python')
+            assert exists(venv_python), 'venv dir existed by python executable did not'
+
+            break
+
+        if venv_python is None:
+            conda_env_name = 'al_analysis'
+            if verbose:
+                print('did not find venv in ' + plot_script_dir)
+                print('defaulting to conda env name: ' + conda_env_name)
+
+    if conda_env_name is not None:
+        #conda_path = expanduser('~/anaconda3/condabin/conda')
+        # Now that I'm sourcing ~/.bashrc, this should be fine, and it doesn't matter if
+        # the conda executable is in the same path then (e.g. miniconda)
+        conda_path = 'conda'
+
+        # NOTE: --no-capture-output became available sometime between conda
+        # 4.7.11 and 4.12.0
+        # TODO either try w/ --no-capture-output first, falling back to not using it
+        # (which error to catch? easy?) or check conda version first. or enforce
+        # >=4.12.0 (or whichever earlier version actually introduced this flag)
+        env_cmd_prefix = ('{conda_path} run -n {conda_env_name} --no-capture-output'
+            ).format(conda_path=conda_path, conda_env_name=conda_env_name)
+    else:
+        assert venv_python is not None
+        # TODO test!
+        env_cmd_prefix = venv_python
+
+    cmd = ('{env_cmd_prefix} {plot_script_path} -d {analysis_dir} '
+        '-r {tmp_roiset_zip_path} -i {index}').format(
+        env_cmd_prefix=env_cmd_prefix, plot_script_path=plot_script_path,
+        analysis_dir=analysis_dir, tmp_roiset_zip_path=tmp_roiset_zip_path, index=index
     )
 
     if add_to_existing_plot:
@@ -531,7 +580,7 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
     # non-stdlib imports don't happen in the client path in al_analysis/plot_roi.py)
 
     if source_bashrc:
-        cmd = 'bash -ic "source ~/.bashrc && %s"' % cmd
+        cmd = 'bash -ic "source ~/.bashrc && {cmd}"'.format(cmd=cmd)
 
     # TODO delete
     verbose = True
@@ -548,8 +597,7 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
     # reason?
     pb = ProcessBuilder(cmd_list)
 
-    plot_script_dir = File(split(plot_script_path)[0])
-    pb.directory(plot_script_dir)
+    pb.directory(File(plot_script_dir))
 
     # TODO is this actually doing anything? what was the point?
     # TODO or maybe i actually want to capture the output, and print it?
