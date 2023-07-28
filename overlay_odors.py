@@ -9,8 +9,9 @@ from ij.gui import Overlay, TextRoi
 from java.awt import Color
 
 
-# TODO TODO TODO add hotkeys (via a separate script, or maybe diff args to this one?)
-# to jump to first frame of next / prev odor
+# TODO add hotkeys (via a separate script, or maybe diff args to this one?) to jump to
+# first frame of next / prev odor? less important now that i mainly use tiffs processed
+# so time dimension has one odor per time point
 
 # TODO maybe set at least the very last frame to have no overlay, at least for
 # non-concat movies, so when we are comparing one that is and isn't, it's clear the odor
@@ -25,8 +26,14 @@ def overlay(imp=None):
         imp = IJ.getImage()
 
     file_info = imp.getOriginalFileInfo()
+    # TODO can i just do file_info.directory as in overlay_rois_in_curr_z.py? diffs?
     abs_tiff_path = file_info.getFilePath()
     tiff_dir = split(abs_tiff_path)[0]
+
+    n_frames = imp.getNFrames()
+    if n_frames <= 1:
+        print 'current image does not have more than one frame! doing nothing!'
+        return
 
     json_fname = join(tiff_dir, 'trial_frames_and_odors.json')
     if verbose:
@@ -35,11 +42,6 @@ def overlay(imp=None):
     if not exists(json_fname):
         print 'odor / frame info did not exist at:', json_fname
         print 'doing nothing!'
-        return
-
-    n_frames = imp.getNFrames()
-    if n_frames <= 1:
-        print 'current image does not have more than one frame! doing nothing!'
         return
 
     with open(json_fname, 'r') as f:

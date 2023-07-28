@@ -1,8 +1,9 @@
 
-from os.path import join, exists, isdir
+from os.path import join, split, exists, isdir
 from zipfile import ZipFile
 import tempfile
 from shutil import rmtree
+import glob
 
 from ij import IJ, WindowManager
 from ij.plugin.frame import RoiManager
@@ -100,16 +101,37 @@ def main():
     if analysis_dir.startswith(sep):
         parts = [''] + parts
 
-    # Should typically be 'glomeruli_diagnostics' exactly, though might occasionally be
-    # something like 'glomeruli_diagnostics_redo'.
-    assert 'diag' in parts[-2], parts[-2]
+    # TODO comment explaining why we have this expectation
     assert '..' == parts[-1], parts[-1]
 
     exp_dir = sep.join(parts[:-1])
     assert isdir(exp_dir), ('%s was not a directory!' % exp_dir)
-
     if verbose:
         print 'exp_dir:', exp_dir
+
+    fly_analysis_dir, exp_dir_name = split(exp_dir)
+
+    # TODO also warn / err if not using first (numbered? time recorded? should be
+    # same...) diagnostic recording dir
+    #
+    # Should typically be 'glomeruli_diagnostics' exactly, though might occasionally be
+    # something like 'glomeruli_diagnostics_redo'.
+    # More recently, I've been doing 'diagnostics1', 'diagnostics2', etc (as I have more
+    # odors and need to break it up across more recordings).
+    if 'diag' not in exp_dir_name:
+        # If we don't have any diagnostics for this fly, then OK to use current
+        # directory.
+        all_fly_exp_dirs = glob.glob(join(fly_analysis_dir, '*/'))
+
+        # TODO replace w/ warning popup?
+        # i forget if errors caused issues w/ subsequent jython calls...
+        #
+        # d[:-1] to remove trailing '/' before splitting
+        # (otherwise we'd get empty string instead of directory name)
+        assert not any(['diag' in split(d[:-1])[-1] for d in all_fly_exp_dirs]), \
+            ('if diagnostic recordings exist, ROIs should be defined on first of those.'
+            ' if you wish, manually save ROIs to appropriate diagnostic recording dir.'
+        )
 
     roiset_path = join(exp_dir, 'RoiSet.zip')
     if verbose:

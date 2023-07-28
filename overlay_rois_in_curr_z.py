@@ -38,7 +38,8 @@ verbose = False
 # TODO TODO TODO try to get to update in all windows with overlays when any window with
 # an overlay has an ROI change (change so i only have one listener and register it w/
 # all the windows?)
-# TODO TODO TODO make n -> renumber_rois also update any active overlays
+# TODO TODO make n -> renumber_rois also update any active overlays
+# (currently just need to press n 2(-3?) times and it will)
 class OverlayUpdaterKeyListener(KeyAdapter):
     draw_names = False
     draw_labels = False
@@ -53,12 +54,23 @@ class OverlayUpdaterKeyListener(KeyAdapter):
         imp = event.getSource().getImage()
         key_code = event.getKeyCode()
 
+        # This is the default ROI manager hotkey for adding an ROI.
+        # TODO can we override it? comment if we can't / don't want to
         if key_code == KeyEvent.VK_T:
             # I might have encountered some times where the ROI manager add didn't
             # get processed before we try to update the overlay below... May need to
             # manually handle the add in here and deal with that hotkey if it keeps
             # happening.
             time.sleep(0.2)
+
+            # TODO TODO TODO when current odor is a diagnostic w/ a glomerulus
+            # specified, default to the name of that glomerulus for new_name
+            # (don't do if we already have that ROI in the plane tho)
+            # TODO or maybe have a modifier key / another hotkey use that name, and
+            # otherwise just keep current behavior (or auto pick next number otherwise)?
+            #
+            # (w/o being able to share code, would require copying a lot from
+            # overlay_odors.py. might wanna merge that into this anyway...)
 
         # TODO why does this one not seem to work, but t does?
         # (as in the original hotkey not getting triggered separately)
@@ -332,6 +344,10 @@ def update_matching_roi():
             # Second argument is default string. The empty string will *also* be
             # returned if user cancels the dialog.
             new_name = IJ.getString('New ROI name:', old_name)
+
+            # TODO TODO TODO check no other ROIs in same plane have same new_name
+            # (as then future attempts to find matching ROI will err, and i have to
+            # change manually from ROI manager)
 
             if len(new_name) == 0:
                 return
