@@ -11,11 +11,10 @@ from os import getenv
 from os.path import expanduser, split, join, isdir, exists
 import time
 import shlex
-# TODO delete
-#from pprint import pprint
 
 from java.lang import ProcessBuilder
-from java.lang.ProcessBuilder import Redirect
+# TODO delete
+#from java.lang.ProcessBuilder import Redirect
 from java.io import File
 from java.awt.event import KeyAdapter, KeyEvent
 from ij import IJ
@@ -95,10 +94,6 @@ class OverlayUpdaterKeyListener(KeyAdapter):
         # renumber in here (at least i can still double tap n to update, as it is now)
         elif key_code == KeyEvent.VK_N:
             pass
-
-        # TODO TODO TODO def don't always require named glomeruli need a match
-        # (so either use another option to require that, when we want it, or just warn
-        # if we ROI is named and not found in cached responses)
 
         # shift+h not mentioned in docs I can see, but it does seem to do something
         # Don't think I care about it though, so I'm unmapping it via startup config.
@@ -318,9 +313,9 @@ def update_matching_roi():
     if overlay_roi is None:
         return
 
-    # TODO TODO maybe my overlay creation should be making some maybe i should cache a
-    # list of ROIs in overlay creation (maybe via a listener for [each?] overlay roi?)
-    # -> previous ROIs, and then just get the index of the currently selected one?
+    # TODO maybe my overlay creation should be making some list of ROIs in overlay
+    # creation (maybe via a listener for [each?] overlay roi?) -> previous ROIs, and
+    # then just get the index of the currently selected one?
     # (not sure how to even have global state, or if it's possible here tho...)
     # TODO or maybe i should just use listeners to keep a list of overlay rois and roi
     # manager rois in sync if i'm gonna go that route anyway...
@@ -570,17 +565,36 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
     )
 
     if add_to_existing_plot:
+        # -a/--add
         cmd = cmd + ' -a'
 
     if hallem:
+        # -H/--hallem
         cmd = cmd + ' -H'
+
+    if not compare_to_cached:
+        # -n/--no-compare
+        cmd = cmd + ' -n'
 
     # TODO technically could probably avoid sourcing + even activating conda environment
     # as long as we already have one plotting server process running (cause the
     # non-stdlib imports don't happen in the client path in al_analysis/plot_roi.py)
 
+    # TODO why does this not seem to produce a pstree output that has an additional bash
+    # process between ImageJ-linux64 and the first python descendent (presumably the
+    # server plot_roi.py process)
     if source_bashrc:
-        cmd = 'bash -ic "source ~/.bashrc && {cmd}"'.format(cmd=cmd)
+        # -i flag to initial bash call caused bug where on subsequent calls, ImageJ
+        # process would stop (presumably because some child process was waiting for
+        # input when it would never get any?). something like this:
+        # https://unix.stackexchange.com/questions/294471
+        #
+        # TODO actually test i can still get this to set environment variables as i
+        # needed, if i wanted to use imagej started from default (/ simply generated)
+        # .desktop file, which doesn't set any env vars (if not, may as well delete all
+        # source_bashrc code... esp if i can't fix why previous line caused [most of?]
+        # process-being-stopped bug)
+        cmd = 'bash -c "source ~/.bashrc && {cmd}"'.format(cmd=cmd)
 
     # TODO delete
     verbose = True
@@ -599,25 +613,22 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
 
     pb.directory(File(plot_script_dir))
 
-    # TODO is this actually doing anything? what was the point?
     # TODO or maybe i actually want to capture the output, and print it?
-    pb.redirectOutput(Redirect.INHERIT)
-    pb.redirectError(Redirect.INHERIT)
+    # could not see python process output (in terminal, at least, and probably also in
+    # ImageJ console) without these
+    #pb.redirectOutput(Redirect.INHERIT)
+    #pb.redirectError(Redirect.INHERIT)
+    # TODO maybe see what pb.redirectInput() is by default?
+    # TODO check that this also handles stderr, and isn't introducing additional errors
+    # by maybe redirecting stdin (if that could even be an issue?) unlike above
+    # (before deleting above, previous way of doing it)
+    pb.inheritIO()
 
     # TODO print out PID started? other details?
 
-    # TODO delete
-    #print 'before pb.start'
-    ##
     proc = pb.start()
-    ## TODO delete
-    #print 'after pb.start'
-    # for some reason, this would only print if the following print was added...
-    #pprint(dir(proc))
-    #print 'after dir print'
-    #
 
-    # TODO TODO how to something from the script? ideally w/o using files behind the
+    # TODO TODO how to get something from the script? ideally w/o using files behind the
     # scenes... (want to be able to jump to max response index, or cycle through them in
     # order)
 
