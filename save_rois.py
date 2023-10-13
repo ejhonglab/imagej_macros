@@ -102,6 +102,7 @@ def main():
         parts = [''] + parts
 
     # TODO comment explaining why we have this expectation
+    # NOTE: this was triggered once on 2023-09-29, analyzing 2023-06-23/1 data
     assert '..' == parts[-1], parts[-1]
 
     exp_dir = sep.join(parts[:-1])

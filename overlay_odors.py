@@ -18,6 +18,8 @@ from java.awt import Color
 # info has run off the end for the shorter movie, when we are syncing t-frames and are
 # looking at further frames in the concatenated movie?
 
+# TODO TODO factor out fn for getting odor from time index + odor list?
+
 def overlay(imp=None):
 
     verbose = False

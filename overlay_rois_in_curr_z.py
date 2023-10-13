@@ -11,12 +11,18 @@ from os import getenv
 from os.path import expanduser, split, join, isdir, exists
 import time
 import shlex
+from pprint import pprint
 
 from java.lang import ProcessBuilder
-# TODO delete
-#from java.lang.ProcessBuilder import Redirect
 from java.io import File
-from java.awt.event import KeyAdapter, KeyEvent
+# TODO delete FocusAdapter (timer seems sufficient)
+from java.awt.event import KeyAdapter, KeyEvent, FocusAdapter
+# TODO replace FocusAdapter with this if it works? or listener chain might still be
+# useful to achieve persistence of server here? idk...
+from java.util import Timer, TimerTask
+#
+from java.net import ServerSocket, SocketTimeoutException, BindException
+from java.io import DataInputStream
 from ij import IJ
 from ij.gui import Overlay, Roi
 from ij.plugin.frame import RoiManager
@@ -32,6 +38,7 @@ from ij.gui import RoiListener
 # again, and have one for odor overlay and one for time
 
 verbose = False
+_debug = False
 
 # TODO TODO TODO either here or via startup macros, override / add-to default 't'
 # actions to also prompt for a name for the roi (at least shift+t or something)?
@@ -44,6 +51,9 @@ class OverlayUpdaterKeyListener(KeyAdapter):
     draw_names = False
     draw_labels = False
     black_behind_text = False
+
+    # TODO straightforward to make an __init__? need to call super()?
+    # (would want to init ServerSocket there, if that approach works at all)
 
     def keyPressed(self, event):
         # TODO do i ignore the keyevent if imp isn't one we added listener too?
@@ -615,7 +625,7 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
 
     # TODO or maybe i actually want to capture the output, and print it?
     # could not see python process output (in terminal, at least, and probably also in
-    # ImageJ console) without these
+    # ImageJ console) without these (or pb.inheritIO(), presumably)
     #pb.redirectOutput(Redirect.INHERIT)
     #pb.redirectError(Redirect.INHERIT)
     # TODO maybe see what pb.redirectInput() is by default?
@@ -630,43 +640,9 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
 
     # TODO TODO how to get something from the script? ideally w/o using files behind the
     # scenes... (want to be able to jump to max response index, or cycle through them in
-    # order)
+    # order) (see what i'm doing w/ check_for_odor_index. solved problem.)
 
     # TODO possible to print when things proc ends (for debugging)?
-
-
-# TODO probably just move this into the __init__ of the listener
-def add_listener(imp, draw_names, draw_labels, black_behind_text):
-    win = imp.getWindow()
-    if win is None:
-        # TODO might rather err here
-        return
-
-    canvas = win.getCanvas()
-    kls = canvas.getKeyListeners()
-
-    existing_listener = None
-    for listener in kls:
-        # type / isintance checks were not working
-        if 'OverlayUpdaterKeyListener' in str(type(listener)):
-            existing_listener = listener
-
-    if existing_listener is not None:
-        listener = existing_listener
-    else:
-        # TODO maybe pass image / image ID thru a custom __init__
-        listener = OverlayUpdaterKeyListener()
-
-    listener.draw_names = draw_names
-    listener.draw_labels = draw_labels
-    listener.black_behind_text = black_behind_text
-
-    # TODO do i have to do this? if so, maybe wrap existing listeners and pass thru
-    # everything but the few keys i want to use (t, r)?
-    #map(canvas.removeKeyListener, kls)
-
-    if existing_listener is None:
-        canvas.addKeyListener(listener)
 
 
 def overlay(imp=None, draw_names=False, draw_labels=False, black_behind_text=False):
@@ -771,6 +747,161 @@ class ZRespectingRoiOverlayer(RoiListener):
         print ''
 
 
+# https://docs.oracle.com/javase/tutorial/networking/sockets/clientServer.html
+# just an arbitrary port
+# TODO log which port we are listening on?
+port = 49007
+timeout_ms = 100
+server = None
+
+# https://stackoverflow.com/questions/5680259
+#
+# TODO why is it not an issue that this overlay script gets invoked multiple times?
+# what is guaranteeing this is not conflicting with past runs (it seems to not though)?
+# TODO try to move this to an init method, if it works, to re-use server.
+# matter? seems ok here...
+try:
+    server = ServerSocket(port)
+
+    # TODO TODO TODO set recieve buffer to just be able to store one int (would it keep
+    # getting overwritten with most recent? that's what i'd want)?
+    # (to worry less about stale stuff. may still want to deal with it...)
+    server.setSoTimeout(timeout_ms)
+
+except BindException:
+    print 'another server already bound on port %d!' % port
+
+
+def check_for_odor_index(imp):
+    if server is None:
+        if _debug:
+            print 'server was never set up (port was already bound)!'
+            print ''
+
+        return
+
+    if _debug:
+        print 'calling server.accept() to make client'
+        print ''
+
+    try:
+        # TODO TODO can i have multiple server.accept() calls (as-is)?
+        client = server.accept()
+    except SocketTimeoutException:
+        if _debug:
+            print 'accept timed out!'
+
+        return
+
+    client_stream = client.getInputStream()
+    data_stream = DataInputStream(client_stream)
+
+    if _debug:
+        print 'trying to read integer'
+
+    # TODO ints in same format as if we write them in the simplest way from
+    # python (try stuff ~5-20k)? maybe try readLong?
+    odor_index = data_stream.readInt()
+
+    if _debug:
+        print 'odor_index received:', odor_index
+
+    # TODO TODO broaden support for TIFFs w/ # timepoints = total number of
+    # presentations OR full number of timepoints (= # frames). see what odor overlay is
+    # doing.
+
+    # SyncWindows should handle propagating to other windows (if any).
+    # My opening macro should open SyncWindows with the appropriate settings.
+    imp.setT(odor_index + 1)
+
+    client.close()
+    data_stream.close()
+
+
+# TODO delete (timer seems sufficient)
+class WindowFocusOdorIndexServerHook(FocusAdapter):
+    def focusGained(self, event):
+        if _debug:
+            print 'event:', event
+
+        canvas = event.getSource()
+        imp = canvas.getImage()
+        if _debug:
+            print 'imp:', imp
+
+        check_for_odor_index(imp)
+
+        if _debug:
+            print ''
+
+
+class CheckOdorIndex(TimerTask):
+    def __init__(self, imp):
+        self.imp = imp
+        # TODO work? needed?
+        super(CheckOdorIndex, self).__init__()
+
+    def run(self):
+        check_for_odor_index(self.imp)
+
+
+# TODO probably just move this into the __init__ of the listener
+def add_listeners(imp, draw_names, draw_labels, black_behind_text):
+    win = imp.getWindow()
+    if win is None:
+        # TODO might rather err here
+        return
+
+    canvas = win.getCanvas()
+    kls = canvas.getKeyListeners()
+
+    existing_listener = None
+    for listener in kls:
+        # type / isintance checks were not working
+        if 'OverlayUpdaterKeyListener' in str(type(listener)):
+            existing_listener = listener
+
+    if existing_listener is not None:
+        listener = existing_listener
+    else:
+        # TODO maybe pass image / image ID thru a custom __init__
+        listener = OverlayUpdaterKeyListener()
+
+    listener.draw_names = draw_names
+    listener.draw_labels = draw_labels
+    listener.black_behind_text = black_behind_text
+
+    # TODO do i have to do this? if so, maybe wrap existing listeners and pass thru
+    # everything but the few keys i want to use (t, r)?
+    #map(canvas.removeKeyListener, kls)
+
+    if existing_listener is None:
+        canvas.addKeyListener(listener)
+
+        # current implementation will only let this work on the first image an ROI
+        # overlay is attached to (port will be taken in all future cases)
+
+        # NOTE: currently relying on this being created only when first listener is, in
+        # order to not have duplicates. if this checking was handled separately, we
+        # could use one without the other, but maybe we don't need to.
+        timer_task = CheckOdorIndex(imp)
+        # TODO could also try Timer(True) to specify it should run as a daemon
+        timer = Timer()
+        # Should be in milliseconds
+        timer.scheduleAtFixedRate(timer_task, 0, 2 * timeout_ms)
+
+    # TODO delete (timer seems sufficient)
+    #
+    # TODO may also need to check whether this type of listener already exists
+    # (following some of logic as above)
+    #
+    # TODO possible to have this triggered whenever data is available at that port?
+    # TODO or possible to spawn some timer thread type thing to check on a regular
+    # interval (so i don't need to click back into the window)?
+    #focus_listener = WindowFocusOdorIndexServerHook()
+    #canvas.addFocusListener(focus_listener)
+
+
 def main():
     #print 'listener containing only:', [x for x in dir(Roi) if 'listener' in x.lower()]
     # not sure why this isn't defined even though it's in the API docs...
@@ -789,7 +920,7 @@ def main():
     # adding/updating/deleting? would i need to time.sleep then, to guarantee ROI change
     # made before updating overlay? or do they happen in a particular order anyway
     # (order in list?)?
-    add_listener(imp, draw_names, draw_labels, black_behind_text)
+    add_listeners(imp, draw_names, draw_labels, black_behind_text)
 
     overlay(imp, draw_names=draw_names, draw_labels=draw_labels,
         black_behind_text=black_behind_text
