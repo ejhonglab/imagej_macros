@@ -1,3 +1,15 @@
+- populate ROI name field w/ current diagnostic by default!
+
+- shift+p / other hotkey for plotting all ROIs w/ same name (sorted by z)
+  - similar hotkey for renaming all ROIs sharing same name (similar to how renumber
+    function does it)
+
+- try to get 'd' hotkey (delete matching ROI) to not switch slice
+
+- hotkey for going to first diagnostic w/o a labelled glomerulus?
+
+- automatically pick reasonable colormap scale (from max intensity across all odors?)
+
 - hotkey to close all open images and ROI manager (making sure ROI manager wouldn't have
   ROIs if opened again) (so that the 1/2 hotkeys can be used again w/o worrying, or just
   modify them to clear ROI manager [unless/if modifier?])
@@ -18,3 +30,9 @@
 
 - why (on atlas) does shift+p seem to do what alt+p is supposed to do (in addition to
   doing something else first...)?
+
+- "c" hotkey to compare all ROIs w/ same name (put all in one plot, as if adding all via
+  alt+p). (exclude '+'/'?' characters for this purpose)
+
+- hotkey+system for marking volumetric ROIs as done scrutinizing (or varying degrees of
+  done, perhaps as in the various checkboxes for this in the gsheet?)?

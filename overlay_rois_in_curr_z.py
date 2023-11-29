@@ -15,12 +15,8 @@ from pprint import pprint
 
 from java.lang import ProcessBuilder
 from java.io import File
-# TODO delete FocusAdapter (timer seems sufficient)
-from java.awt.event import KeyAdapter, KeyEvent, FocusAdapter
-# TODO replace FocusAdapter with this if it works? or listener chain might still be
-# useful to achieve persistence of server here? idk...
+from java.awt.event import KeyAdapter, KeyEvent
 from java.util import Timer, TimerTask
-#
 from java.net import ServerSocket, SocketTimeoutException, BindException
 from java.io import DataInputStream
 from ij import IJ
@@ -506,7 +502,9 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
         assert len(prev_rois) == len(manager.getRoisAsArray())
 
     # TODO assert this exists?
-    plot_script_path = expanduser('~/src/al_analysis/plot_roi.py')
+    plot_script_path = expanduser(getenv(
+        'HONG_IMAGEJ_PLOT_SCRIPT', '~/src/al_analysis/plot_roi.py'
+    ))
     plot_script_dir = split(plot_script_path)[0]
 
     imp = IJ.getImage()
@@ -523,7 +521,13 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
     # TODO TODO support using a venv? how?
 
     # Seems to work (at least if started from a terminal...)
-    conda_env_name = getenv('AL_ANALYSIS_CONDA_ENV')
+    conda_env_name = getenv(
+        'HONG_IMAGEJ_PLOT_SCRIPT_CONDA_ENV',
+        # TODO delete usage of AL_ANALYSIS_CONDA_ENV (would just need to get sam to
+        # update his config) (to be consistent w/ name of env var above, and more
+        # agnostic to which plotting script we use)
+        getenv('AL_ANALYSIS_CONDA_ENV')
+    )
 
     venv_python = None
     if conda_env_name is None:
@@ -694,6 +698,9 @@ def overlay(imp=None, draw_names=False, draw_labels=False, black_behind_text=Fal
     if draw_names:
         draw_labels = True
 
+    # TODO comment explaining how drawNames is different from drawLabels...
+    # NOTE: draw_names=true seems to be only one set by my hotkeys.
+    # draw_labels is always false there.
     overlay.drawNames(draw_names)
     overlay.drawLabels(draw_labels)
     overlay.drawBackgrounds(black_behind_text)
@@ -818,23 +825,6 @@ def check_for_odor_index(imp):
     data_stream.close()
 
 
-# TODO delete (timer seems sufficient)
-class WindowFocusOdorIndexServerHook(FocusAdapter):
-    def focusGained(self, event):
-        if _debug:
-            print 'event:', event
-
-        canvas = event.getSource()
-        imp = canvas.getImage()
-        if _debug:
-            print 'imp:', imp
-
-        check_for_odor_index(imp)
-
-        if _debug:
-            print ''
-
-
 class CheckOdorIndex(TimerTask):
     def __init__(self, imp):
         self.imp = imp
@@ -881,25 +871,17 @@ def add_listeners(imp, draw_names, draw_labels, black_behind_text):
         # current implementation will only let this work on the first image an ROI
         # overlay is attached to (port will be taken in all future cases)
 
+        # TODO need to try to associate this with some other object that is likely to
+        # persist?
         # NOTE: currently relying on this being created only when first listener is, in
         # order to not have duplicates. if this checking was handled separately, we
         # could use one without the other, but maybe we don't need to.
         timer_task = CheckOdorIndex(imp)
         # TODO could also try Timer(True) to specify it should run as a daemon
         timer = Timer()
+        # TODO log id(...) of timer to try to debug where stuff is freezing?
         # Should be in milliseconds
         timer.scheduleAtFixedRate(timer_task, 0, 2 * timeout_ms)
-
-    # TODO delete (timer seems sufficient)
-    #
-    # TODO may also need to check whether this type of listener already exists
-    # (following some of logic as above)
-    #
-    # TODO possible to have this triggered whenever data is available at that port?
-    # TODO or possible to spawn some timer thread type thing to check on a regular
-    # interval (so i don't need to click back into the window)?
-    #focus_listener = WindowFocusOdorIndexServerHook()
-    #canvas.addFocusListener(focus_listener)
 
 
 def main():
