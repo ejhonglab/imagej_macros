@@ -590,6 +590,18 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
         # -n/--no-compare
         cmd = cmd + ' -n'
 
+    profile = False
+    # NOTE: requires line_profiler installed in plot script environment
+    # (via `pip install line-profiler`)
+    # currently need to `pkill -SIGINT -f '/plot_roi'` to kill script and end timing
+    #
+    # should save profiling results to <plot-script>.lprof (in same directory as plot
+    # script path, probably). can view results via `python -m line_profiler <.lprof>`
+    # (it'll tell you how to view results too. you can pass `-u 1` option (for units to
+    # be in seconds) after the fact too.)
+    if profile:
+        cmd = 'LINE_PROFILE=1 {cmd}'.format(cmd=cmd)
+
     # TODO technically could probably avoid sourcing + even activating conda environment
     # as long as we already have one plotting server process running (cause the
     # non-stdlib imports don't happen in the client path in al_analysis/plot_roi.py)
