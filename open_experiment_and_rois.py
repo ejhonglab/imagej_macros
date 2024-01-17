@@ -39,6 +39,17 @@ def main():
         #    '../trial_dff_concat.tif',
         ] + 2 * [
             '../trialmean_dff_concat.tif',
+
+        # TODO want this by default? show separately (via another hotkey? 3?)?
+        # TODO also make a new hotkey to show trial_dff_concat.tif (+ a copy that shows
+        # odors there)?
+        ] + [
+            # TODO find a way to not try syncing this w/ odor length ones, then
+            # uncomment here are remove from '1' hotkey (branch below)
+            #
+            # all frames averaged (weighted equally). to compare ROIs to ~background
+            # signal.
+            #'../mocorr_concat_avg.tif',
         ]
 
     else:
@@ -46,6 +57,13 @@ def main():
         load_rois = False
         # TODO maybe also load raw in this case?
         tiffs_to_load = [
+            # NOTE: i would include on the '2' hotkey (instead of this one), if i had a
+            # way to automate not trying to sync this w/ the odor-length TIFFs
+            #
+            # all frames averaged (weighted equally). to compare ROIs to ~background
+            # signal.
+            '../mocorr_concat_avg.tif',
+
             # This should be a symlink to one ../suite2p/mocorr_concat.tif, which should
             # itself be a directory symlink to one of the suite2p run directories under
             # ../suite2p_runs (e.g. ../suite2p_runs/<run number>/suite2p)
@@ -101,6 +119,8 @@ def main():
 
             '../trial_dff_concat.tif',
             '../trialmean_dff_concat.tif',
+
+            '../mocorr_concat_avg.tif',
         ]
         tiffs_to_start_with_odor_overlay = {
             x for x in set(tiffs_to_load) if tiffs_to_load.count(x) > 1
@@ -162,6 +182,10 @@ def main():
 
         # This should be the child Panel that contains the checkboxes.
         checkbox_panel = parent_panel.components[1]
+
+        # TODO TODO possible to exclude mocorr_concat_avg.tif (currently last entry)
+        # from this? it doesn't have an odor axis...
+        # (or just don't load it under '2' hotkey, and give it a separate one...)
 
         for c in checkbox_panel.components:
             if c.label == 'Sync cursor':

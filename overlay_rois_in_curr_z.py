@@ -95,6 +95,10 @@ class OverlayUpdaterKeyListener(KeyAdapter):
         elif key_code == KeyEvent.VK_D:
             delete_matching_roi()
 
+        # 'g' doesn't seem to be a default hotkey ('G' is screenshot)
+        elif key_code == KeyEvent.VK_G:
+            remove_uncertainty_suffix()
+
         # TODO test if this works (doesn't seem to, i.e. the overlay is not updated
         # after rois are renumbered). might just need to refactor and explicitly call
         # renumber in here (at least i can still double tap n to update, as it is now)
@@ -143,6 +147,66 @@ class OverlayUpdaterKeyListener(KeyAdapter):
             draw_labels=self.draw_labels,
             black_behind_text=self.black_behind_text
         )
+
+
+def rename_roi(manager, roi, new_name=None, default_new_name=None,
+    check_name_unique_in_plane=True):
+    """Renames ROI, prompting user for name if `new_name=None`.
+
+    Args:
+        default_new_name: if user will be prompted for ROI name, this will be what that
+            text entry box starts with. if not passed, will use existing ROI name.
+            unused if `new_name` is passed.
+
+    Raises assertion error if `check_name_unique_in_plane=True`, so that future
+    matching on (name, plane) isn't broken.
+    """
+    old_name = roi.getName()
+
+    if new_name is None:
+        if default_new_name is None:
+            default_new_name = old_name
+
+        # Second argument is default string. The empty string will *also* be
+        # returned if user cancels the dialog.
+        new_name = IJ.getString('New ROI name:', default_new_name)
+
+        if len(new_name) == 0:
+            return
+
+    else:
+        # TODO other checks?
+        assert len(new_name) > 0
+
+    if new_name == old_name:
+        return
+
+    # TODO test!
+    #
+    # checking no other ROIs in same plane have same new_name (as then future
+    # attempts to find matching ROI will err, and i have to change manually from
+    # ROI manager)
+    if check_name_unique_in_plane:
+        curr_z = roi.getZPosition()
+        rois = manager.getRoisAsArray()
+        n_matching = 0
+        for i, curr_roi in enumerate(rois):
+            if curr_roi.getZPosition() != curr_z:
+                continue
+
+            if curr_roi.getName() == new_name:
+                n_matching += 1
+
+        assert n_matching == 0, ('%d ROI(s) with name="%s" already in z=%d' %
+            (n_matching, new_name, curr_z)
+        )
+
+    # TODO TODO rename anything sharing same name as well
+    # (i.e. in other planes)
+    # (consistent w/ how number_rois.py works on numbered ROIs + QoL)
+
+    index = manager.getRoiIndex(roi)
+    manager.rename(index, new_name)
 
 
 def print_roi(roi):
@@ -244,11 +308,19 @@ def check_roi_state(roi, expected_state='NORMAL'):
     for state_name in states:
         if state_int == getattr(Roi, state_name):
             state = state_name
+
     assert state is not None
-    assert state == expected_state
+    # NOTE: this does randomly get triggered sometimes (not sure what state(s) it tends
+    # to be in though. didn't have RHS of assertion to print at the time.
+    assert state == expected_state, (
+        'state (%s) != expected_state (%s)' % (state, expected_state)
+    )
 
 
 def get_overlay_roi(check_state=True):
+    # TODO doc type of return
+    """Returns selected ROI in overlay
+    """
     # TODO might want to check if this is None...
     imp = IJ.getImage()
     overlay_roi = imp.roi
@@ -281,13 +353,17 @@ def get_overlay_roi(check_state=True):
 
 
 def find_roi_manager_index(target_roi, manager=None):
+    """Returns (manager, index).
+
+    Returned index is None if no matching ROI.
+    Returned manager is None if ROI manager not open (and not passed in).
+    """
     if manager is None:
         manager = RoiManager.getInstance()
         if not manager:
             if verbose:
-                print 'ROI manager not open. doing nothing.'
+                print 'ROI manager not open!'
 
-            # TODO or err
             return None, None
 
     rois = manager.getRoisAsArray()
@@ -299,6 +375,9 @@ def find_roi_manager_index(target_roi, manager=None):
             n_matching += 1
 
     if index is None:
+        if verbose:
+            print 'no matching ROI!'
+
         return manager, None
 
     # TODO TODO test meaningful error message if there are two w/ same name in same
@@ -308,20 +387,29 @@ def find_roi_manager_index(target_roi, manager=None):
     return manager, index
 
 
-# TODO TODO make also work if ROI selected in ROI manager list
-# TODO TODO also make sure it works if ROI has just been drawn and added, but overlay
-# not updated (also try to get it to work to also add the ROI, if it hasn't even been
-# added to the ROI manager)
-def update_matching_roi():
-    # TODO TODO abort w/ error message if trying to rename an roi to the same name as
-    # another roi already in the same plane (as then other update calls will fail)
-    overlay_roi = get_overlay_roi()
+def find_overlay_roi_manager_index(manager=None, **kwargs):
+    """Returns (overlay_roi, ROI_manager, index).
+
+    If no overlay ROI is selected, None is returned for `overlay_roi`, `manager`, and
+    `index`. Returned `manager` is None if ROI manager not open (and not passed in).
+
+    Args:
+        manager: ROI manager instance (will try to get open one if not passed)
+        **kwargs: passed to `get_overlay_roi`
+    """
+    overlay_roi = get_overlay_roi(**kwargs)
     if overlay_roi is None:
-        return
+        # TODO TODO TODO check whether any code currently needs manager if other stuff
+        # would be None. would complicate implementation if i needed that.
+        # (couldn't do this. would still need to get manager.)
+        # TODO or maybe allow None/similar sentinel input to find_roi_manager to just
+        # return the manager without finding index?
+        return None, None, None
 
     # TODO maybe my overlay creation should be making some list of ROIs in overlay
     # creation (maybe via a listener for [each?] overlay roi?) -> previous ROIs, and
     # then just get the index of the currently selected one?
+    # (would then not have to rely on matching name i guess?)
     # (not sure how to even have global state, or if it's possible here tho...)
     # TODO or maybe i should just use listeners to keep a list of overlay rois and roi
     # manager rois in sync if i'm gonna go that route anyway...
@@ -329,38 +417,48 @@ def update_matching_roi():
     # Roi stored there.
 
     manager, index = find_roi_manager_index(overlay_roi)
-    if manager is None or index is None:
+    return overlay_roi, manager, index
+
+
+# TODO also one for adding/toggling some of these suffixes?
+def remove_uncertainty_suffix():
+    overlay_roi, manager, index = find_overlay_roi_manager_index()
+    if overlay_roi is None or manager is None or index is None:
         return
 
-    rename_if_unchanged = True
+    roi = manager.getRoi(index)
+    old_name = roi.getName()
+    # this will remove any amount/ordering of '+' and '?' characters from right end of
+    # name
+    new_name = old_name.rstrip('+?')
+    rename_roi(manager, roi, new_name)
+
+
+# TODO make also work if ROI selected in ROI manager list
+# TODO TODO also make sure it works if ROI has just been drawn and added, but overlay
+# not updated (also try to get it to work to also add the ROI, if it hasn't even been
+# added to the ROI manager)
+def update_matching_roi():
+    overlay_roi, manager, index = find_overlay_roi_manager_index()
+    if overlay_roi is None or manager is None or index is None:
+        return
 
     old_roi = manager.getRoi(index)
     assert manager.getRoiIndex(old_roi) == index
+
+    rename_if_unchanged = True
+
     # TODO some reason i'm not using rois_equal here? i think it's intentional...
     if old_roi.equals(overlay_roi):
+        # TODO TODO factor out this roi renaming (-> use to modify suffixes in hotkeys
+        # too)
         if not rename_if_unchanged:
             if verbose:
                 print 'ROI not changed! doing nothing!'
         else:
-            old_name = old_roi.getName()
-            # Second argument is default string. The empty string will *also* be
-            # returned if user cancels the dialog.
-            new_name = IJ.getString('New ROI name:', old_name)
-
-            # TODO TODO TODO check no other ROIs in same plane have same new_name
-            # (as then future attempts to find matching ROI will err, and i have to
-            # change manually from ROI manager)
-
-            if len(new_name) == 0:
-                return
-
-            if new_name == old_name:
-                return
-
-            # TODO TODO rename anything sharing same name as well
-            # (consistent w/ how number_rois.py works on numbered ROIs + QoL)
-
-            manager.rename(index, new_name)
+            # without the second parameter passed, rename_roi will prompt for new name
+            # (with text in entry box starting at old name)
+            rename_roi(manager, old_roi)
 
         return
 
@@ -375,20 +473,8 @@ def update_matching_roi():
 
 
 def delete_matching_roi():
-    verbose = False
-
-    overlay_roi = get_overlay_roi()
-    if overlay_roi is None:
-        if verbose:
-            print 'no overlay roi'
-
-        return
-
-    manager, index = find_roi_manager_index(overlay_roi)
-    if manager is None or index is None:
-        if verbose:
-            print 'manager not open or no matching index'
-
+    overlay_roi, manager, index = find_overlay_roi_manager_index()
+    if overlay_roi is None or manager is None or index is None:
         return
 
     # Just in case the .select call adds to selection rather than overwriting it.
@@ -397,6 +483,12 @@ def delete_matching_roi():
 
     if verbose:
         print 'deleting roi at index', str(index)
+
+    # TODO try to not switch indices of slice of movie we are viewing
+    # or save -> restore, via something like:
+    #imp = IJ.getImage()
+    #imp.setT(odor_index + 1)
+    # (may need to do w/ other dimensions? just T may also be what i need)
 
     manager.select(index)
     manager.runCommand('Delete')
@@ -413,6 +505,9 @@ def delete_matching_roi():
 def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=False,
     compare_to_cached=False):
 
+    # NOTE: not using find_overlay_roi_manager_index, as that currently returns None
+    # manager if no matching overlay_roi. we still want manager in here.
+
     # seems this will be None if i just finished drawing an ROI (as currently
     # implemented at least) (or presumably also if i'm drawing an ROI)
     overlay_roi = get_overlay_roi()
@@ -427,26 +522,11 @@ def plot_roi_responses(source_bashrc=True, add_to_existing_plot=False, hallem=Fa
     verbose = False
     #
     if overlay_roi is not None:
-        #TODO delete
-        if verbose:
-            print 'overlay roi was not none'
-        #
-
         # TODO change to work w/ multiple ROIs selected? ig it would need to be from the
         # list though (is it possible to select multiple overlay ROIs?)?
         _, index = find_roi_manager_index(overlay_roi, manager=manager)
-
         if index is None:
-            # TODO delete
-            if verbose:
-                print 'no manager roi matching overlay roi'
-            #
             return
-
-        # TODO delete
-        if verbose:
-            print 'found manager roi matching overlay roi'
-        #
 
         # TODO if i actually need the deselect() call further down, just move outside
         # conditional and have one call

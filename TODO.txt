@@ -8,7 +8,20 @@
 
 - hotkey for going to first diagnostic w/o a labelled glomerulus?
 
+- hotkeys for coloring ROIs according to whether they are done or not
+  (i.e. whether we checked for contamination, etc). can store that data in something
+  like a json alongside RoiSet.zip, and color in ROI overlayer?
+
+  - similarly color odor name green in that overlay, if glomerulus for diagnostic is
+    already labelled?
+    + hotkey to go to first non-labelled diagnostic odor
+
 - automatically pick reasonable colormap scale (from max intensity across all odors?)
+  (ideally via somehow automating Ctrl-Shift-c B&C contrast manager, or via changing the
+  same settings it does)
+
+- hotkey (K?) to kill existing plot server (to not need another terminal to run
+  `pkill -f '/plot_roi'`)
 
 - hotkey to close all open images and ROI manager (making sure ROI manager wouldn't have
   ROIs if opened again) (so that the 1/2 hotkeys can be used again w/o worrying, or just

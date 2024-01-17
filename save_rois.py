@@ -61,6 +61,10 @@ def zip_contents_equal(filename1, filename2):
 
 
 def main():
+    # TODO TODO just print where we will save ROIs once (first time in a new fly, or
+    # print entirely separately inside open_experiment_and_rois.py), and then just print
+    # timestamp + "saved ROIs" on all [other] calls.
+
     verbose = False
 
     n_open_images = WindowManager.getImageCount()
@@ -86,8 +90,13 @@ def main():
         return
 
     file_info = imp.getOriginalFileInfo()
-    analysis_dir = file_info.directory
 
+    # TODO deal w/ NoneType: (probably, but not positive, it was this line)
+    # [ERROR] Traceback (most recent call last):
+    #   File "save_rois.py", line 181, in <module>
+    #   File "save_rois.py", line 89, in main
+    # AttributeError: 'NoneType' object has no attribute 'directory'
+    analysis_dir = file_info.directory
 
     # TODO replace this hack to find RoiSet.zip path w/ something that sets path to ROIs
     # in my open_experiment_and_rois.py script (though i had tried a few times to figure
