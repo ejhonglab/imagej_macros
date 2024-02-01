@@ -71,19 +71,35 @@ def overlay(imp=None):
     # port my existing code that does this.
     n_repeats = 3
 
+    # (for sam's use case where some odors only have 1 trial each, in same flies as
+    # other experiments w/ usual 3 trials per odor)
+    no_seq_dupes = []
+    for x in trial_data_list:
+        # assuming that if x['odors'] matches that of last, the rest of the relevant
+        # data will too (should almost always be true. includes conc.)
+        if len(no_seq_dupes) == 0 or x['odors'] != no_seq_dupes[-1]['odors']:
+            no_seq_dupes.append(x)
+
+    trial_data_iter = trial_data_list
+
     if len(trial_data_list) == n_frames:
         tiff_frames_are = 'presentations'
 
-    elif len(trial_data_list) // n_repeats == n_frames:
+    # TODO delete?
+    #elif len(trial_data_list) // n_repeats == n_frames:
+    elif len(no_seq_dupes) == n_frames:
         tiff_frames_are = 'trial-averaged-odors'
+        trial_data_iter = no_seq_dupes
 
     else:
+        # TODO instead of this assertion, just do nothing and say why
+        #assert n_frames > len(trial_data_list)
         tiff_frames_are = 'time'
         # TODO TODO err (/log to console / popup warning) if n_frames doesn't match up
         # w/ # timepoints in movie
         # TODO err if any frames are overlapping (/ missing)
 
-    for i, trial_data in enumerate(trial_data_list):
+    for i, trial_data in enumerate(trial_data_iter):
         if tiff_frames_are == 'time':
             start_frame = trial_data['start_frame'] + 1
             first_odor_frame = trial_data['first_odor_frame'] + 1
@@ -97,7 +113,9 @@ def overlay(imp=None):
         # still always have one entry per presentation (so should have n_repeats
         # consecutive of each).
         elif tiff_frames_are == 'trial-averaged-odors':
-            start_frame = (i // n_repeats) + 1
+            # TODO delete (was before adding no_seq_dupes)
+            #start_frame = (i // n_repeats) + 1
+            start_frame = i + 1
             end_frame = start_frame
 
         # str describing all odors presented on this trial
